@@ -37,3 +37,9 @@ export interface Transaction {
 
 /** The fields a user fills in; `id` is generated when the transaction is saved. */
 export type TransactionInput = Omit<Transaction, 'id'>
+
+/**
+ * Monthly spending limits in cents, one per expense category. A category with no entry has
+ * no budget. The same limits apply to every month.
+ */
+export type Budgets = Partial<Record<ExpenseCategory, number>>

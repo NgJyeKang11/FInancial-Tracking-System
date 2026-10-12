@@ -13,10 +13,13 @@ export function useTransactions() {
   const add = (input: TransactionInput) =>
     setTransactions((prev) => [...prev, { ...input, id: crypto.randomUUID() }])
 
+  const addMany = (inputs: TransactionInput[]) =>
+    setTransactions((prev) => [...prev, ...inputs.map((input) => ({ ...input, id: crypto.randomUUID() }))])
+
   const update = (id: string, input: TransactionInput) =>
     setTransactions((prev) => prev.map((t) => (t.id === id ? { ...input, id } : t)))
 
   const remove = (id: string) => setTransactions((prev) => prev.filter((t) => t.id !== id))
 
-  return { transactions, add, update, remove }
+  return { transactions, add, addMany, update, remove }
 }

@@ -1,18 +1,24 @@
 import { useMemo, useState } from 'react'
+import { BudgetAlerts } from './components/BudgetAlerts'
+import { BudgetPanel } from './components/BudgetPanel'
+import { ImportDialog } from './components/ImportDialog'
 import { SpendingCharts } from './components/SpendingCharts'
 import { SummaryCards } from './components/SummaryCards'
 import { TransactionForm } from './components/TransactionForm'
 import { TransactionList } from './components/TransactionList'
+import { useBudgets } from './hooks/useBudgets'
 import { useTransactions } from './hooks/useTransactions'
 import { formatMonth, monthOf, todayISO } from './lib/dates'
-import { balanceByDate, expensesOnly, inMonth } from './lib/stats'
+import { balanceByDate, budgetStatuses, expensesOnly, inMonth } from './lib/stats'
 import { loadCurrency, saveCurrency } from './lib/storage'
 import { CATEGORIES, INCOME_CATEGORIES, type Category, type Transaction } from './types'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
 
 function App() {
-  const { transactions, add, update, remove } = useTransactions()
+  const { transactions, add, addMany, update, remove } = useTransactions()
+  const { budgets, setBudget } = useBudgets()
+  const [importing, setImporting] = useState(false)
   const [month, setMonth] = useState(monthOf(todayISO()))
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All')
   const [search, setSearch] = useState('')
@@ -22,6 +28,8 @@ function App() {
   const monthTransactions = useMemo(() => inMonth(transactions, month), [transactions, month])
 
   const monthExpenses = useMemo(() => expensesOnly(monthTransactions), [monthTransactions])
+
+  const statuses = useMemo(() => budgetStatuses(monthTransactions, budgets), [monthTransactions, budgets])
 
   // Balances use every transaction, so filtering the list never changes the running balance.
   const balances = useMemo(() => balanceByDate(transactions), [transactions])
@@ -53,15 +61,34 @@ function App() {
           <h1>Spending Tracker</h1>
           <p className="muted">Log what comes in and goes out each day, and see where your money goes.</p>
         </div>
-        <label className="inline">
-          Currency
-          <select value={currency} onChange={(e) => changeCurrency(e.target.value)}>
-            {CURRENCIES.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
+        <div className="header-actions">
+          <button type="button" onClick={() => setImporting(true)}>
+            Import statement
+          </button>
+          <label className="inline">
+            Currency
+            <select value={currency} onChange={(e) => changeCurrency(e.target.value)}>
+              {CURRENCIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
+
+      {importing && (
+        <ImportDialog
+          existing={transactions}
+          currency={currency}
+          onClose={() => setImporting(false)}
+          onImport={(inputs) => {
+            addMany(inputs)
+            // Show the newest month that was imported, so the new transactions are on screen.
+            const newest = inputs.map((t) => t.date).sort().at(-1)
+            if (newest) setMonth(monthOf(newest))
+          }}
+        />
+      )}
 
       <div className="filters">
         <label className="inline">
@@ -90,6 +117,8 @@ function App() {
         </label>
       </div>
 
+      <BudgetAlerts statuses={statuses} currency={currency} />
+
       <SummaryCards all={transactions} monthTransactions={monthTransactions} month={month} currency={currency} />
 
       <main className="layout">
@@ -109,6 +138,12 @@ function App() {
               setMonth(monthOf(input.date))
             }}
             onCancelEdit={() => setEditing(null)}
+          />
+          <BudgetPanel
+            monthTransactions={monthTransactions}
+            budgets={budgets}
+            currency={currency}
+            onChange={setBudget}
           />
         </aside>
 
