@@ -90,6 +90,25 @@ function monthIndex(name: string): number {
   return MONTHS.indexOf(name.slice(0, 3).toLowerCase()) + 1
 }
 
+const MONTH_WORDS = new Set([
+  ...MONTHS,
+  'sept',
+  'january',
+  'february',
+  'march',
+  'april',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+])
+
+/** True only for an actual month name or abbreviation, so "Marina" or "Decimal" don't count. */
+const isMonthWord = (word: string) => MONTH_WORDS.has(word.toLowerCase())
+
 interface LeadingDate {
   raw: string
   rest: string
@@ -118,8 +137,9 @@ export function splitLeadingDate(text: string): LeadingDate | null {
   if (m && Number(m[1]) <= 31 && Number(m[2]) <= 31) {
     return { raw: m[0], rest: s.slice(m[0].length).trim(), partial: true }
   }
-  m = s.match(/^(\d{1,2})[\s-]+([A-Za-z]{3,9})\.?(?![A-Za-z])/)
-  if (m && monthIndex(m[2]) > 0 && Number(m[1]) <= 31) {
+  // Some banks print the day and month with no gap at all, like "09Dec".
+  m = s.match(/^(\d{1,2})\s*-?\s*([A-Za-z]{3,9})\.?(?![A-Za-z])/)
+  if (m && isMonthWord(m[2]) && Number(m[1]) <= 31) {
     return { raw: m[0], rest: s.slice(m[0].length).trim(), partial: true }
   }
   return null
@@ -136,13 +156,18 @@ const kindOfHeader = (text: string): ColumnKind | 'date' | 'description' | null 
   return null
 }
 
-/** Finds the table's header line (the one naming the money columns) and where each column sits. */
+/**
+ * Finds the transaction table's header line and where each money column sits. It must have a
+ * Date column plus a money column (or both Debit and Credit), which keeps it from latching onto
+ * other boxes on the page such as an account summary with a "Balance" heading.
+ */
 function findHeader(lines: Line[]): { index: number; columns: HeaderColumn[] } | null {
   for (let index = 0; index < lines.length; index++) {
     const kinds = lines[index].cells.map((c) => kindOfHeader(c.text))
     const money = kinds.filter((k) => k === 'debit' || k === 'credit' || k === 'amount' || k === 'balance')
-    const labels = kinds.filter((k) => k === 'date' || k === 'description')
-    if (money.length >= 2 || (money.length >= 1 && labels.length >= 1)) {
+    const hasDate = kinds.includes('date')
+    const hasBothSides = kinds.includes('debit') && kinds.includes('credit')
+    if ((hasDate && money.length >= 1) || hasBothSides) {
       const columns = lines[index].cells.flatMap((c, i) => {
         const kind = kinds[i]
         return kind === 'debit' || kind === 'credit' || kind === 'amount' || kind === 'balance' ? [{ ...c, kind }] : []
@@ -178,6 +203,50 @@ function statementYear(lines: Line[]): number {
   }
   if (counts.size === 0) return new Date().getFullYear()
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0]
+}
+
+/**
+ * Cleans up a description gathered from several lines: drops long reference numbers (like
+ * "QR20251209077761"), collapses runs of commas left behind, and trims stray punctuation.
+ */
+export function tidyDescription(text: string): string {
+  return text
+    .replace(/\b[A-Za-z0-9]*\d{9,}[A-Za-z0-9]*/g, '')
+    .replace(/,(\s*,)+/g, ',')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+,/g, ',')
+    .replace(/^[\s,]+|[\s,]+$/g, '')
+}
+
+interface Period {
+  startYear: number
+  startMonth: number
+  endYear: number
+  endMonth: number
+}
+
+const PERIOD_DATE = String.raw`\d{4}-\d{2}-\d{2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\.?,?\s+\d{4}`
+const PERIOD = new RegExp(`(${PERIOD_DATE})\\s*(?:-|–|—|to|until|hingga)\\s*(${PERIOD_DATE})`, 'i')
+
+/**
+ * Looks for the statement's date range ("09/12/2025 - 08/01/2026", "1 Oct 2026 to 31 Oct 2026").
+ * Statements that print dates without a year rely on it to say which year each transaction is in.
+ */
+function findStatementPeriod(lines: Line[]): Period | null {
+  for (const line of lines) {
+    const m = line.cells.map((c) => c.text).join(' ').match(PERIOD)
+    if (!m) continue
+    const order = detectDateOrder([m[1], m[2]])
+    const start = parseDateLoose(m[1], order)
+    const end = parseDateLoose(m[2], order)
+    if (!start || !end || start > end) continue
+    const [startYear, startMonth] = start.split('-').map(Number)
+    const [endYear, endMonth] = end.split('-').map(Number)
+    // A statement covers up to a year or so; anything longer isn't a statement period.
+    if ((endYear - startYear) * 12 + endMonth - startMonth > 13) continue
+    return { startYear, startMonth, endYear, endMonth }
+  }
+  return null
 }
 
 /**
@@ -255,8 +324,12 @@ export function parseStatementRows(items: PdfTextItem[]): string[][] {
 
   if (raws.length === 0) return []
 
-  const dates = resolveDates(raws.map((r) => r.leading), year)
-  const rows = raws.map((r) => r.row)
+  const dates = resolveDates(
+    raws.map((r) => r.leading),
+    year,
+    findStatementPeriod(lines),
+  )
+  const rows = raws.map((r) => ({ ...r.row, description: tidyDescription(r.row.description) }))
 
   if (hasSplit) {
     const withBalance = rows.some((r) => r.balance !== undefined)
@@ -280,14 +353,19 @@ export function parseStatementRows(items: PdfTextItem[]): string[][] {
   ]
 }
 
-/** Turns the dates found into YYYY-MM-DD, filling in missing years and a year change (Dec -> Jan). */
-function resolveDates(leading: LeadingDate[], year: number): string[] {
+/**
+ * Turns the dates found into YYYY-MM-DD, filling in missing years. The statement period decides
+ * the year when there is one (including a period that crosses New Year); otherwise the most
+ * common year in the document is used, with earlier Dec rows moved back a year if the dates
+ * jump from Dec to Jan.
+ */
+function resolveDates(leading: LeadingDate[], year: number, period: Period | null): string[] {
   const full = leading.filter((l) => !l.partial).map((l) => l.raw)
   const order: DateOrder = detectDateOrder(leading.filter((l) => l.partial).map((l) => l.raw).concat(full))
 
   const parts = leading.map((l) => {
     if (!l.partial) return null
-    const named = l.raw.match(/^(\d{1,2})[\s-]+([A-Za-z]+)/)
+    const named = l.raw.match(/^(\d{1,2})\s*-?\s*([A-Za-z]+)/)
     if (named) return { day: Number(named[1]), month: monthIndex(named[2]) }
     const [a, b] = l.raw.split(/[-/.]/).map(Number)
     return order === 'dmy' ? { day: a, month: b } : { day: b, month: a }
@@ -305,7 +383,10 @@ function resolveDates(leading: LeadingDate[], year: number): string[] {
   return leading.map((l, i) => {
     const p = parts[i]
     if (!l.partial || !p) return parseDateLoose(l.raw, order) ?? l.raw
-    const y = rolloverAt >= 0 && seenPartial++ < rolloverAt ? year - 1 : year
+    let y = rolloverAt >= 0 && seenPartial++ < rolloverAt ? year - 1 : year
+    if (period) {
+      y = period.startYear === period.endYear || p.month < period.startMonth ? period.endYear : period.startYear
+    }
     const pad = (n: number) => String(n).padStart(2, '0')
     return `${y}-${pad(p.month)}-${pad(p.day)}`
   })
