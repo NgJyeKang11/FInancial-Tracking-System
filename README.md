@@ -1,10 +1,12 @@
-# Spending Tracker
+# Financier by JK
 
 A web app for logging daily income and spending, tracking your balance, and seeing where your money goes, by day and by category.
 
 **Live demo:** https://ngjyekang11.github.io/FInancial-Tracking-System/
 
-![Screenshot of the Spending Tracker dashboard](docs/screenshot.png)
+![Screenshot of the Financier dashboard](docs/screenshot.png)
+
+Built with assistance from [Claude](https://claude.com/claude-code).
 
 ## Features
 

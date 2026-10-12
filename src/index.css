@@ -69,6 +69,19 @@ h1 {
   font-size: 1.75rem;
 }
 
+h1 .byline {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.app-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
 h2 {
   font-size: 1rem;
 }

@@ -58,7 +58,9 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div>
-          <h1>Spending Tracker</h1>
+          <h1>
+            Financier <span className="byline">by JK</span>
+          </h1>
           <p className="muted">Log what comes in and goes out each day, and see where your money goes.</p>
         </div>
         <div className="header-actions">
@@ -160,6 +162,8 @@ function App() {
           />
         </div>
       </main>
+
+      <footer className="app-footer muted">Built with assistance from Claude</footer>
     </div>
   )
 }
