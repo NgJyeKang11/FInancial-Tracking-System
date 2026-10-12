@@ -235,6 +235,14 @@ h2 {
   padding: 2px 6px;
 }
 
+.import-table button.swap {
+  min-height: 0;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 .import-table tr.skipped td {
   opacity: 0.55;
 }

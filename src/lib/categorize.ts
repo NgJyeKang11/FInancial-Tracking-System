@@ -6,7 +6,7 @@ import { INCOME_CATEGORIES, type Category, type ExpenseCategory, type IncomeCate
  * broader ones (like "grab").
  */
 const EXPENSE_RULES: [ExpenseCategory, string[]][] = [
-  ['Food & Drink', ['grabfood', 'foodpanda', 'deliveroo', 'ubereats', 'uber eats', 'doordash', 'starbucks', 'mcdonald', 'kfc', 'burger', 'pizza', 'sushi', 'restaurant', 'cafe', 'coffee', 'bakery', 'bistro', 'kopitiam', 'dining', 'food court', 'boba', 'tealive']],
+  ['Food & Drink', ['grabfood', 'foodpanda', 'deliveroo', 'ubereats', 'uber eats', 'doordash', 'starbucks', 'mcdonald', 'kfc', 'burger', 'pizza', 'sushi', 'restaurant', 'cafe', 'coffee', 'bakery', 'bistro', 'kopitiam', 'dining', 'food court', 'boba', 'tealive', 'noodle', 'restoran', 'warung', 'mamak', 'kitchen', 'eatery', 'food', 'bbq', 'steamboat', 'hotpot', 'ramen', 'dim sum']],
   ['Groceries', ['grocer', 'supermarket', 'hypermarket', 'tesco', 'aeon', 'lotus', 'giant', 'jaya grocer', 'cold storage', 'fairprice', 'walmart', 'aldi', 'lidl', 'kroger', 'speedmart', 'mydin', 'village grocer', 'market']],
   ['Transport', ['grab', 'uber', 'lyft', 'taxi', 'petrol', 'petronas', 'shell', 'fuel', 'gas station', 'parking', 'toll', 'touch n go', 'tng', 'mrt', 'lrt', 'train', 'bus ', 'airasia', 'flight', 'airline', 'transit']],
   ['Entertainment', ['netflix', 'spotify', 'disney', 'youtube', 'cinema', 'tgv', 'gsc', 'steam', 'playstation', 'xbox', 'movie', 'concert', 'ticket', 'hbo', 'apple music']],

@@ -9,6 +9,7 @@ import {
   type ColumnMap,
   type DateOrder,
 } from '../lib/csv'
+import { categorize } from '../lib/categorize'
 import { formatDayHeading } from '../lib/dates'
 import { formatCents } from '../lib/money'
 import { describePdfProblem, PdfImportError, readPdfStatement } from '../lib/pdf'
@@ -25,6 +26,8 @@ interface RowEdit {
   category?: Category
   /** Overrides the default: new rows are included, duplicates are skipped. */
   include?: boolean
+  /** Swaps the row between money in and money out, for when the statement was misread. */
+  flip?: boolean
 }
 
 const MAX_CSV_BYTES = 5 * 1024 * 1024
@@ -71,9 +74,17 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
     return picked !== undefined && CATEGORIES_BY_TYPE[input.type].includes(picked) ? picked : input.category
   }
 
+  /** The row as read, or swapped between money in and out if the user did that. */
+  const effective = (index: number, input: TransactionInput): TransactionInput => {
+    if (!edits[index]?.flip) return input
+    const type = input.type === 'income' ? 'expense' : 'income'
+    return { ...input, type, category: categorize(input.note, type) }
+  }
+
   const toImport = parsed.flatMap((r, i) => {
     if (!r.ok || !isIncluded(i)) return []
-    return [{ ...r.input, category: chosenCategory(i, r.input) }]
+    const input = effective(i, r.input)
+    return [{ ...input, category: chosenCategory(i, input) }]
   })
   const unreadable = parsed.filter((r) => !r.ok)
   const skippedDuplicates = duplicates.filter(Boolean).length
@@ -254,8 +265,19 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {parsed.map((r, i) =>
-                  r.ok ? (
+                {parsed.map((r, i) => {
+                  if (!r.ok) {
+                    return (
+                      <tr key={i} className="unreadable">
+                        <td />
+                        <td colSpan={4}>
+                          Row {r.line}: {r.reason}
+                        </td>
+                      </tr>
+                    )
+                  }
+                  const input = effective(i, r.input)
+                  return (
                     <tr key={i} className={isIncluded(i) ? undefined : 'skipped'}>
                       <td>
                         <input
@@ -265,36 +287,38 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
                           onChange={(e) => setEdit(i, { include: e.target.checked })}
                         />
                       </td>
-                      <td>{formatDayHeading(r.input.date)}</td>
+                      <td>{formatDayHeading(input.date)}</td>
                       <td>
-                        {r.input.note || <span className="muted">(no description)</span>}
+                        {input.note || <span className="muted">(no description)</span>}
                         {duplicates[i] && <span className="chip dup">Already added?</span>}
                       </td>
                       <td>
                         <select
                           aria-label={`Category for row ${r.line}`}
-                          value={chosenCategory(i, r.input)}
+                          value={chosenCategory(i, input)}
                           onChange={(e) => setEdit(i, { category: e.target.value as Category })}
                         >
-                          {CATEGORIES_BY_TYPE[r.input.type].map((c) => (
+                          {CATEGORIES_BY_TYPE[input.type].map((c) => (
                             <option key={c}>{c}</option>
                           ))}
                         </select>
                       </td>
-                      <td className={r.input.type === 'income' ? 'num positive' : 'num'}>
-                        {r.input.type === 'income' ? '+' : '−'}
-                        {formatCents(r.input.amountCents, currency)}
+                      <td className={input.type === 'income' ? 'num positive' : 'num'}>
+                        {input.type === 'income' ? '+' : '−'}
+                        {formatCents(input.amountCents, currency)}
+                        <button
+                          type="button"
+                          className="swap"
+                          title="Swap money in / money out"
+                          aria-label={`Row ${r.line} is ${input.type === 'income' ? 'money in' : 'money out'}. Swap it`}
+                          onClick={() => setEdit(i, { flip: !edits[i]?.flip, category: undefined })}
+                        >
+                          ⇄
+                        </button>
                       </td>
                     </tr>
-                  ) : (
-                    <tr key={i} className="unreadable">
-                      <td />
-                      <td colSpan={4}>
-                        Row {r.line}: {r.reason}
-                      </td>
-                    </tr>
-                  ),
-                )}
+                  )
+                })}
               </tbody>
             </table>
           </div>
