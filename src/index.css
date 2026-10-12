@@ -1,0 +1,408 @@
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --text: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #77756f;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --hover: rgba(11, 11, 11, 0.04);
+  --accent: #2a78d6;
+  --accent-text: #ffffff;
+  --series-1: #2a78d6;
+  --danger: #d03b3b;
+  --chip: #e8f0fb;
+  --chip-text: #1c5cab;
+  --radius: 12px;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9a9890;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --hover: rgba(255, 255, 255, 0.05);
+    --accent: #3987e5;
+    --series-1: #3987e5;
+    --danger: #e66767;
+    --chip: #1d2c40;
+    --chip-text: #9ec5f4;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1rem;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.layout aside {
+  position: sticky;
+  top: 16px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .layout aside {
+    position: static;
+  }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.section-title {
+  margin-top: 8px;
+}
+
+/* ---------- Form controls ---------- */
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+label.inline {
+  min-width: 140px;
+}
+
+label.grow {
+  flex: 1;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--axis);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-height: 40px;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+button {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--hover);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+button.primary:hover {
+  filter: brightness(1.08);
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Summary ---------- */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 800px) {
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Charts ---------- */
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  /* Bars use fill="currentColor", so this sets the series color for both themes. */
+  color: var(--series-1);
+}
+
+.chart h2 {
+  color: var(--text);
+}
+
+.chart .recharts-cartesian-grid line {
+  stroke: var(--grid);
+}
+
+.chart .recharts-cartesian-axis-line {
+  stroke: var(--axis);
+}
+
+.chart .recharts-cartesian-axis-tick-value,
+.chart .bar-label {
+  fill: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart .chart-cursor {
+  fill: var(--hover);
+}
+
+.chart-tooltip {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ---------- Transaction list ---------- */
+
+.list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.day + .day {
+  border-top: 1px solid var(--border);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--hover);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-header h3 {
+  font-size: 0.875rem;
+}
+
+.day ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.row.editing {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  background: var(--chip);
+  color: var(--chip-text);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.row-actions button {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+  border-color: transparent;
+  background: transparent;
+}
+
+.row-actions button:hover {
+  background: var(--hover);
+}
+
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: 1fr auto;
+  }
+  .row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: 32px 16px;
+}
