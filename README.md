@@ -1,6 +1,6 @@
 # Spending Tracker
 
-A web app for logging daily spending and seeing where your money goes, by day and by category.
+A web app for logging daily income and spending, tracking your balance, and seeing where your money goes, by day and by category.
 
 **Live demo:** https://ngjyekang11.github.io/FInancial-Tracking-System/
 
@@ -9,8 +9,10 @@ A web app for logging daily spending and seeing where your money goes, by day an
 ## Features
 
 - **Add, edit and delete transactions** with an amount, category, date and an optional note
-- **Daily view:** transactions are grouped by day, with a total for each day
-- **Monthly summary:** spent today, spent this month, daily average and top category
+- **Income and spending:** switch between Expense and Income when adding a transaction, each with its own categories
+- **Running balance:** every day shows its net amount and the balance at the end of that day
+- **Daily view:** transactions are grouped by day, newest first
+- **Monthly summary:** balance, income, spending, net, daily average, top category and savings rate
 - **Charts:** spending per day and spending by category (with hover tooltips)
 - **Filters:** pick a month, filter by category, or search your notes
 - **Currency picker** (USD, EUR, MYR, SGD and more)
@@ -58,14 +60,14 @@ src/
 ├── components/
 │   ├── TransactionForm.tsx  # Add / edit form with validation
 │   ├── TransactionList.tsx  # Transactions grouped by day
-│   ├── SummaryCards.tsx     # Today / month / average / top category
+│   ├── SummaryCards.tsx     # Balance / income / spent / net / average / savings rate
 │   └── SpendingCharts.tsx   # Daily and per-category bar charts
 ├── hooks/
 │   └── useTransactions.ts   # State + automatic saving to localStorage
 └── lib/                     # Plain functions with unit tests
     ├── money.ts             # Parsing and formatting amounts
     ├── dates.ts             # Local-date helpers
-    ├── stats.ts             # Totals, grouping, per-day and per-category sums
+    ├── stats.ts             # Totals, net, running balance, grouping, per-day and per-category sums
     └── storage.ts           # Loading/saving with validation
 ```
 
@@ -82,7 +84,7 @@ Every push to `main` runs the lint, tests and build in GitHub Actions, then publ
 
 ## Roadmap
 
-- [ ] Income tracking and a running balance
+- [x] Income tracking and a running balance
 - [ ] Monthly budgets per category, with warnings when you go over
 - [ ] Import and export as CSV
 - [ ] Cloud sync and user accounts (e.g. with Supabase)

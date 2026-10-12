@@ -13,8 +13,11 @@
   --accent-text: #ffffff;
   --series-1: #2a78d6;
   --danger: #d03b3b;
+  --positive: #1a7f4b;
   --chip: #e8f0fb;
   --chip-text: #1c5cab;
+  --chip-income: #e3f4ea;
+  --chip-income-text: #17643c;
   --radius: 12px;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   line-height: 1.5;
@@ -35,8 +38,11 @@
     --accent: #3987e5;
     --series-1: #3987e5;
     --danger: #e66767;
+    --positive: #4cc38a;
     --chip: #1d2c40;
     --chip-text: #9ec5f4;
+    --chip-income: #173424;
+    --chip-income-text: #8fdcb4;
   }
 }
 
@@ -252,6 +258,36 @@ button.danger {
   overflow-wrap: anywhere;
 }
 
+.positive {
+  color: var(--positive);
+}
+
+.negative {
+  color: var(--danger);
+}
+
+/* ---------- Expense / income toggle ---------- */
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--hover);
+  border-radius: 10px;
+}
+
+.segmented button {
+  border-color: transparent;
+  background: transparent;
+}
+
+.segmented button.selected {
+  background: var(--surface);
+  border-color: var(--axis);
+  font-weight: 600;
+}
+
 /* ---------- Charts ---------- */
 
 .charts {
@@ -326,6 +362,22 @@ button.danger {
 
 .day-header h3 {
   font-size: 0.875rem;
+}
+
+.day-totals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.day-totals .muted {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.chip.income {
+  background: var(--chip-income);
+  color: var(--chip-income-text);
 }
 
 .day ul {

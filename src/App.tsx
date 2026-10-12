@@ -5,9 +5,9 @@ import { TransactionForm } from './components/TransactionForm'
 import { TransactionList } from './components/TransactionList'
 import { useTransactions } from './hooks/useTransactions'
 import { formatMonth, monthOf, todayISO } from './lib/dates'
-import { inMonth } from './lib/stats'
+import { balanceByDate, expensesOnly, inMonth } from './lib/stats'
 import { loadCurrency, saveCurrency } from './lib/storage'
-import { CATEGORIES, type Category, type Transaction } from './types'
+import { CATEGORIES, INCOME_CATEGORIES, type Category, type Transaction } from './types'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
 
@@ -20,6 +20,11 @@ function App() {
   const [currency, setCurrency] = useState(() => loadCurrency() ?? 'USD')
 
   const monthTransactions = useMemo(() => inMonth(transactions, month), [transactions, month])
+
+  const monthExpenses = useMemo(() => expensesOnly(monthTransactions), [monthTransactions])
+
+  // Balances use every transaction, so filtering the list never changes the running balance.
+  const balances = useMemo(() => balanceByDate(transactions), [transactions])
 
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -46,7 +51,7 @@ function App() {
       <header className="app-header">
         <div>
           <h1>Spending Tracker</h1>
-          <p className="muted">Log what you spend each day and see where your money goes.</p>
+          <p className="muted">Log what comes in and goes out each day, and see where your money goes.</p>
         </div>
         <label className="inline">
           Currency
@@ -67,9 +72,16 @@ function App() {
           Category
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as Category | 'All')}>
             <option>All</option>
-            {CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
+            <optgroup label="Expenses">
+              {CATEGORIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Income">
+              {INCOME_CATEGORIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </optgroup>
           </select>
         </label>
         <label className="inline grow">
@@ -101,10 +113,11 @@ function App() {
         </aside>
 
         <div className="content">
-          <SpendingCharts monthTransactions={monthTransactions} month={month} currency={currency} />
+          <SpendingCharts monthTransactions={monthExpenses} month={month} currency={currency} />
           <h2 className="section-title">Transactions · {formatMonth(month)}</h2>
           <TransactionList
             transactions={visible}
+            balances={balances}
             currency={currency}
             editingId={editing?.id ?? null}
             onEdit={setEditing}

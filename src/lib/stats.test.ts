@@ -1,10 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import type { Transaction } from '../types'
 import { daysInMonth, todayISO } from './dates'
-import { dailyTotals, groupByDay, inMonth, totalCents, totalsByCategory } from './stats'
+import {
+  balanceAsOf,
+  balanceByDate,
+  dailyTotals,
+  expensesOnly,
+  groupByDay,
+  incomeOnly,
+  inMonth,
+  netCents,
+  totalCents,
+  totalsByCategory,
+} from './stats'
 
-const tx = (id: string, date: string, amountCents: number, category: Transaction['category']): Transaction => ({
+const tx = (
+  id: string,
+  date: string,
+  amountCents: number,
+  category: Transaction['category'],
+  type: Transaction['type'] = 'expense',
+): Transaction => ({
   id,
+  type,
   date,
   amountCents,
   category,
@@ -46,6 +64,50 @@ describe('stats', () => {
       ['2026-10-01', 2],
       ['2026-09-30', 1],
     ])
+  })
+})
+
+describe('income and balance', () => {
+  const mixed = [
+    tx('a', '2026-10-01', 300000, 'Salary', 'income'),
+    tx('b', '2026-10-01', 5000, 'Groceries'),
+    tx('c', '2026-10-05', 20000, 'Bills & Utilities'),
+    tx('d', '2026-10-05', 1000, 'Gift', 'income'),
+    tx('e', '2026-09-20', 10000, 'Other'),
+  ]
+
+  it('splits income from spending', () => {
+    expect(incomeOnly(mixed).map((t) => t.id)).toEqual(['a', 'd'])
+    expect(expensesOnly(mixed).map((t) => t.id)).toEqual(['b', 'c', 'e'])
+  })
+
+  it('computes net as income minus spending, and can go negative', () => {
+    expect(netCents(inMonth(mixed, '2026-10'))).toBe(300000 + 1000 - 5000 - 20000)
+    expect(netCents(inMonth(mixed, '2026-09'))).toBe(-10000)
+  })
+
+  it('builds a running balance across months, in date order', () => {
+    const balances = balanceByDate(mixed)
+    expect([...balances.entries()]).toEqual([
+      ['2026-09-20', -10000],
+      ['2026-10-01', -10000 + 300000 - 5000],
+      ['2026-10-05', -10000 + 300000 - 5000 - 20000 + 1000],
+    ])
+  })
+
+  it('gives the balance as of a date', () => {
+    expect(balanceAsOf(mixed, '2026-09-30')).toBe(-10000)
+    expect(balanceAsOf(mixed, '2026-10-31')).toBe(266000)
+    expect(balanceAsOf([], '2026-10-31')).toBe(0)
+  })
+
+  it('leaves income out of spending breakdowns', () => {
+    expect(totalsByCategory(mixed)).toEqual([
+      { category: 'Bills & Utilities', cents: 20000 },
+      { category: 'Other', cents: 10000 },
+      { category: 'Groceries', cents: 5000 },
+    ])
+    expect(dailyTotals(mixed, '2026-10').reduce((sum, d) => sum + d.cents, 0)).toBe(25000)
   })
 })
 
