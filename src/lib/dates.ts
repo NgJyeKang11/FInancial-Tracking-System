@@ -17,6 +17,13 @@ export function daysInMonth(month: string): number {
   return new Date(year, m, 0).getDate()
 }
 
+/** Moves a "YYYY-MM" month by `delta` months: ("2026-01", -1) -> "2025-12". */
+export function addMonths(month: string, delta: number): string {
+  const [year, m] = month.split('-').map(Number)
+  const total = year * 12 + (m - 1) + delta
+  return `${Math.floor(total / 12)}-${pad((total % 12) + 1)}`
+}
+
 /** Builds a Date at local midnight so formatting doesn't shift across time zones. */
 function toLocalDate(date: string): Date {
   const [y, m, d] = date.split('-').map(Number)

@@ -51,6 +51,13 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
     dialogRef.current?.showModal()
   }, [])
 
+  // Tell the parent straight away rather than waiting for the dialog's close event, which the
+  // browser can hold back (for example while the tab is in the background).
+  const close = () => {
+    dialogRef.current?.close()
+    onClose()
+  }
+
   const headers = hasHeader ? (table[0] ?? []) : (table[0] ?? []).map((_, i) => `Column ${i + 1}`)
   const dataRows = useMemo(() => (hasHeader ? table.slice(1) : table), [table, hasHeader])
 
@@ -151,10 +158,10 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
   const setEdit = (index: number, edit: RowEdit) => setEdits((prev) => ({ ...prev, [index]: { ...prev[index], ...edit } }))
 
   return (
-    <dialog ref={dialogRef} className="import-dialog" onClose={onClose} aria-labelledby="import-title">
+    <dialog ref={dialogRef} className="dialog import-dialog" onClose={onClose} aria-labelledby="import-title">
       <header className="dialog-head">
         <h2 id="import-title">Import a bank statement</h2>
-        <button type="button" onClick={() => dialogRef.current?.close()}>
+        <button type="button" onClick={close}>
           Close
         </button>
       </header>
@@ -326,7 +333,7 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
       )}
 
       <footer className="dialog-foot">
-        <button type="button" onClick={() => dialogRef.current?.close()}>
+        <button type="button" onClick={close}>
           Cancel
         </button>
         <button
@@ -335,7 +342,7 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
           disabled={!canImport}
           onClick={() => {
             onImport(toImport)
-            dialogRef.current?.close()
+            close()
           }}
         >
           {canImport ? `Import ${toImport.length} transactions` : 'Import'}

@@ -1,14 +1,17 @@
-# Spending Tracker
+# Telemachus by JK
 
 A web app for logging daily income and spending, tracking your balance, and seeing where your money goes, by day and by category.
 
 **Live demo:** https://ngjyekang11.github.io/FInancial-Tracking-System/
 
-![Screenshot of the Spending Tracker dashboard](docs/screenshot.png)
+![Screenshot of the Telemachus dashboard](docs/screenshot.png)
+
+Built with assistance from [Claude](https://claude.com/claude-code).
 
 ## Features
 
-- **Add, edit and delete transactions** with an amount, category, date and an optional note
+- **Four simple pages:** Overview (balance, spending, income and recent transactions), Transactions, Budgets and Insights (charts), with a month switcher shared by all of them
+- **Add, edit and delete transactions** with an amount, category, date and an optional note, in a pop-up
 - **Income and spending:** switch between Expense and Income when adding a transaction, each with its own categories
 - **Running balance:** every day shows its net amount and the balance at the end of that day
 - **Import a bank statement (CSV or PDF):** pick the file you downloaded from online banking and the app finds the date, description and amount columns, guesses a category for each row, skips ones you already added, and lets you review everything before saving. The file is read in your browser and never uploaded. PDF reading is best-effort (layouts vary between banks and scanned PDFs can't be read), so the preview asks you to check each row and lets you swap any row between money in and money out. There are sample statements to try: [CSV](public/sample-statement.csv) and [PDF](public/sample-statement.pdf)
@@ -16,7 +19,7 @@ A web app for logging daily income and spending, tracking your balance, and seei
 - **Monthly summary:** balance, income, spending, net, daily average, top category and savings rate
 - **Monthly budgets:** set a limit for each spending category and see a progress bar for the month, with a warning at 80% and when you go over
 - **Charts:** spending per day and spending by category (with hover tooltips)
-- **Filters:** pick a month, filter by category, or search your notes
+- **Filters:** filter by category, or search your notes
 - **Currency picker** (USD, EUR, MYR, SGD and more)
 - **Saves automatically** in your browser, so there's no account or server needed
 - **Light and dark mode** (follows your system setting) and a layout that works on phones
@@ -58,12 +61,15 @@ Then open the link Vite prints (usually http://localhost:5173/FInancial-Tracking
 
 ```
 src/
-├── App.tsx                  # Page layout, filters and app state
+├── App.tsx                  # Header, page tabs, filters and app state
 ├── types.ts                 # Transaction type and category list
 ├── components/
 │   ├── ImportDialog.tsx     # CSV / PDF statement import with column mapping and a preview
+│   ├── TransactionDialog.tsx # Pop-up holding the add / edit form
 │   ├── TransactionForm.tsx  # Add / edit form with validation
 │   ├── TransactionList.tsx  # Transactions grouped by day
+│   ├── RecentTransactions.tsx # The latest few transactions on the Overview page
+│   ├── MonthPicker.tsx      # Previous / next month switcher
 │   ├── SummaryCards.tsx     # Balance / income / spent / net / average / savings rate
 │   ├── BudgetPanel.tsx      # Set a limit per category, with progress bars
 │   ├── BudgetAlerts.tsx     # Banner for categories that are over or near their budget

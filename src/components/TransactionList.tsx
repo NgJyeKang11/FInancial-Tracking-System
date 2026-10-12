@@ -8,17 +8,16 @@ interface Props {
   /** Running balance at the end of each day, keyed by date. */
   balances: Map<string, number>
   currency: string
-  editingId: string | null
   onEdit: (t: Transaction) => void
   onDelete: (t: Transaction) => void
 }
 
-export function TransactionList({ transactions, balances, currency, editingId, onEdit, onDelete }: Props) {
+export function TransactionList({ transactions, balances, currency, onEdit, onDelete }: Props) {
   if (transactions.length === 0) {
     return (
       <div className="card empty">
-        <p>No transactions here yet.</p>
-        <p className="muted">Add one with the form to start tracking your money.</p>
+        <p>No transactions to show.</p>
+        <p className="muted">Try another month or search, or use + Add to log one.</p>
       </div>
     )
   }
@@ -44,7 +43,7 @@ export function TransactionList({ transactions, balances, currency, editingId, o
             </header>
             <ul>
               {items.map((t) => (
-                <li key={t.id} className={t.id === editingId ? 'row editing' : 'row'}>
+                <li key={t.id} className="row">
                   <div className="row-main">
                     <span className={t.type === 'income' ? 'chip income' : 'chip'}>{t.category}</span>
                     {t.note && <span className="note">{t.note}</span>}
