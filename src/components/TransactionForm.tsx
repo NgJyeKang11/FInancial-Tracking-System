@@ -1,7 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { centsToInput, parseAmountToCents } from '../lib/money'
 import { todayISO } from '../lib/dates'
-import { CATEGORIES, type Category, type Transaction, type TransactionInput } from '../types'
+import {
+  CATEGORIES_BY_TYPE,
+  type Category,
+  type Transaction,
+  type TransactionInput,
+  type TransactionType,
+} from '../types'
 
 interface Props {
   /** When set, the form edits this transaction instead of adding a new one. */
@@ -11,11 +17,19 @@ interface Props {
 }
 
 export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
+  const [type, setType] = useState<TransactionType>(editing?.type ?? 'expense')
   const [amount, setAmount] = useState(editing ? centsToInput(editing.amountCents) : '')
-  const [category, setCategory] = useState<Category>(editing?.category ?? CATEGORIES[0])
+  const [category, setCategory] = useState<Category>(editing?.category ?? CATEGORIES_BY_TYPE.expense[0])
   const [date, setDate] = useState(editing?.date ?? todayISO())
   const [note, setNote] = useState(editing?.note ?? '')
   const [error, setError] = useState('')
+
+  const changeType = (next: TransactionType) => {
+    if (next === type) return
+    setType(next)
+    // Each type has its own categories, so start from the first one.
+    setCategory(CATEGORIES_BY_TYPE[next][0])
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -28,10 +42,10 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
       setError('Pick a date.')
       return
     }
-    onSubmit({ amountCents, category, date, note: note.trim() })
+    onSubmit({ type, amountCents, category, date, note: note.trim() })
     setError('')
     if (!editing) {
-      // Keep category and date so logging several purchases from one day is quick.
+      // Keep type, category and date so logging several entries from one day is quick.
       setAmount('')
       setNote('')
     }
@@ -40,6 +54,20 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
   return (
     <form className="card form" onSubmit={handleSubmit} noValidate>
       <h2>{editing ? 'Edit transaction' : 'Add transaction'}</h2>
+
+      <div className="segmented" role="group" aria-label="Transaction type">
+        {(['expense', 'income'] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            className={type === value ? 'selected' : undefined}
+            aria-pressed={type === value}
+            onClick={() => changeType(value)}
+          >
+            {value === 'expense' ? 'Expense' : 'Income'}
+          </button>
+        ))}
+      </div>
 
       <label>
         Amount
@@ -57,7 +85,7 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
       <label>
         Category
         <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-          {CATEGORIES.map((c) => (
+          {CATEGORIES_BY_TYPE[type].map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>
@@ -73,7 +101,7 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
           Note <span className="muted">(optional)</span>
         </span>
         <input
-          placeholder="e.g. Lunch with friends"
+          placeholder={type === 'income' ? 'e.g. October paycheck' : 'e.g. Lunch with friends'}
           maxLength={100}
           value={note}
           onChange={(e) => setNote(e.target.value)}

@@ -1,27 +1,44 @@
-import { CATEGORIES, type Transaction } from '../types'
+import { CATEGORIES_BY_TYPE, type Transaction } from '../types'
 
 const TRANSACTIONS_KEY = 'fts.transactions.v1'
 const CURRENCY_KEY = 'fts.currency'
 
-function isTransaction(value: unknown): value is Transaction {
-  if (typeof value !== 'object' || value === null) return false
+/**
+ * Checks one saved entry and returns it as a Transaction, or null if it's malformed.
+ * Entries saved before income existed have no `type`; they were all spending.
+ */
+function parseTransaction(value: unknown): Transaction | null {
+  if (typeof value !== 'object' || value === null) return null
   const t = value as Record<string, unknown>
-  return (
-    typeof t.id === 'string' &&
-    Number.isSafeInteger(t.amountCents) &&
-    (t.amountCents as number) > 0 &&
-    CATEGORIES.includes(t.category as never) &&
-    typeof t.date === 'string' &&
-    /^\d{4}-\d{2}-\d{2}$/.test(t.date) &&
-    typeof t.note === 'string'
-  )
+  const type = t.type ?? 'expense'
+  if (type !== 'expense' && type !== 'income') return null
+  if (
+    typeof t.id !== 'string' ||
+    !Number.isSafeInteger(t.amountCents) ||
+    (t.amountCents as number) <= 0 ||
+    !CATEGORIES_BY_TYPE[type].includes(t.category as never) ||
+    typeof t.date !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(t.date) ||
+    typeof t.note !== 'string'
+  ) {
+    return null
+  }
+  return {
+    id: t.id,
+    type,
+    amountCents: t.amountCents as number,
+    category: t.category as Transaction['category'],
+    date: t.date,
+    note: t.note,
+  }
 }
 
 /** Reads saved transactions, skipping anything malformed rather than crashing. */
 export function loadTransactions(storage: Storage = localStorage): Transaction[] {
   try {
     const parsed: unknown = JSON.parse(storage.getItem(TRANSACTIONS_KEY) ?? '[]')
-    return Array.isArray(parsed) ? parsed.filter(isTransaction) : []
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((entry) => parseTransaction(entry) ?? [])
   } catch {
     return []
   }
