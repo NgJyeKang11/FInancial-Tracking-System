@@ -4,12 +4,15 @@ import { daysInMonth, todayISO } from './dates'
 import {
   balanceAsOf,
   balanceByDate,
+  budgetState,
+  budgetStatuses,
   dailyTotals,
   expensesOnly,
   groupByDay,
   incomeOnly,
   inMonth,
   netCents,
+  spentByCategory,
   totalCents,
   totalsByCategory,
 } from './stats'
@@ -108,6 +111,51 @@ describe('income and balance', () => {
       { category: 'Groceries', cents: 5000 },
     ])
     expect(dailyTotals(mixed, '2026-10').reduce((sum, d) => sum + d.cents, 0)).toBe(25000)
+  })
+})
+
+describe('budgets', () => {
+  const october = [
+    tx('a', '2026-10-01', 6000, 'Groceries'),
+    tx('b', '2026-10-05', 3000, 'Groceries'),
+    tx('c', '2026-10-06', 9000, 'Food & Drink'),
+    tx('d', '2026-10-07', 1000, 'Transport'),
+    tx('e', '2026-10-08', 500000, 'Salary', 'income'),
+  ]
+
+  it('classifies spending against a budget', () => {
+    expect(budgetState(7999, 10000)).toBe('ok')
+    expect(budgetState(8000, 10000)).toBe('near')
+    expect(budgetState(10000, 10000)).toBe('near') // exactly at the limit is not over yet
+    expect(budgetState(10001, 10000)).toBe('over')
+    expect(budgetState(0, 10000)).toBe('ok')
+  })
+
+  it('sums spending per category and ignores income', () => {
+    const spent = spentByCategory(october)
+    expect(spent.get('Groceries')).toBe(9000)
+    expect(spent.get('Transport')).toBe(1000)
+    expect(spent.has('Salary')).toBe(false)
+  })
+
+  it('reports status only for budgeted categories, in category order', () => {
+    const statuses = budgetStatuses(october, { Transport: 20000, Groceries: 8000, 'Food & Drink': 9000 })
+    expect(statuses.map((s) => [s.category, s.state])).toEqual([
+      ['Food & Drink', 'near'],
+      ['Groceries', 'over'],
+      ['Transport', 'ok'],
+    ])
+    expect(statuses[1]).toMatchObject({ spentCents: 9000, remainingCents: -1000, ratio: 9000 / 8000 })
+  })
+
+  it('shows a budget with no spending as untouched', () => {
+    expect(budgetStatuses([], { Health: 5000 })).toEqual([
+      { category: 'Health', budgetCents: 5000, spentCents: 0, remainingCents: 5000, ratio: 0, state: 'ok' },
+    ])
+  })
+
+  it('returns nothing when there are no budgets', () => {
+    expect(budgetStatuses(october, {})).toEqual([])
   })
 })
 

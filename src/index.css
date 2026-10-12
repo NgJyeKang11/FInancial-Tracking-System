@@ -14,6 +14,7 @@
   --series-1: #2a78d6;
   --danger: #d03b3b;
   --positive: #1a7f4b;
+  --warning: #a85800;
   --chip: #e8f0fb;
   --chip-text: #1c5cab;
   --chip-income: #e3f4ea;
@@ -39,6 +40,7 @@
     --series-1: #3987e5;
     --danger: #e66767;
     --positive: #4cc38a;
+    --warning: #f0a64a;
     --chip: #1d2c40;
     --chip-text: #9ec5f4;
     --chip-income: #173424;
@@ -105,6 +107,12 @@ h2 {
 .layout aside {
   position: sticky;
   top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* The sidebar is tall now (form + budgets), so let it scroll instead of running off screen. */
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
 }
 
 .content {
@@ -120,6 +128,8 @@ h2 {
   }
   .layout aside {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -263,6 +273,102 @@ button.danger {
 }
 
 .negative {
+  color: var(--danger);
+}
+
+/* ---------- Budgets ---------- */
+
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert {
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+}
+
+.alert.over {
+  border-left-color: var(--danger);
+}
+
+.alert.over strong {
+  color: var(--danger);
+}
+
+.alert.near {
+  border-left-color: var(--warning);
+}
+
+.alert.near strong {
+  color: var(--warning);
+}
+
+.budgets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budgets h2 {
+  font-size: 1rem;
+}
+
+.budgets ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budget-head {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-head label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.meter {
+  height: 8px;
+  margin-top: 6px;
+  background: var(--hover);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.meter.near span {
+  background: var(--warning);
+}
+
+.meter.over span {
+  background: var(--danger);
+}
+
+.budget-note {
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-note.over {
   color: var(--danger);
 }
 

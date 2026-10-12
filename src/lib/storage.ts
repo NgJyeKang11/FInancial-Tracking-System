@@ -1,6 +1,7 @@
-import { CATEGORIES_BY_TYPE, type Transaction } from '../types'
+import { CATEGORIES, CATEGORIES_BY_TYPE, type Budgets, type Transaction } from '../types'
 
 const TRANSACTIONS_KEY = 'fts.transactions.v1'
+const BUDGETS_KEY = 'fts.budgets.v1'
 const CURRENCY_KEY = 'fts.currency'
 
 /**
@@ -49,6 +50,31 @@ export function saveTransactions(transactions: Transaction[], storage: Storage =
     storage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions))
   } catch {
     // Storage can be full or disabled (e.g. private browsing); the app keeps working in memory.
+  }
+}
+
+/** Reads saved budgets, keeping only valid expense categories with a positive whole-cent limit. */
+export function loadBudgets(storage: Storage = localStorage): Budgets {
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(BUDGETS_KEY) ?? '{}')
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
+    const saved = parsed as Record<string, unknown>
+    const budgets: Budgets = {}
+    for (const category of CATEGORIES) {
+      const cents = saved[category]
+      if (Number.isSafeInteger(cents) && (cents as number) > 0) budgets[category] = cents as number
+    }
+    return budgets
+  } catch {
+    return {}
+  }
+}
+
+export function saveBudgets(budgets: Budgets, storage: Storage = localStorage): void {
+  try {
+    storage.setItem(BUDGETS_KEY, JSON.stringify(budgets))
+  } catch {
+    // Same as transactions: keep working in memory if storage is full or disabled.
   }
 }
 
