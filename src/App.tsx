@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
+import { BudgetAlerts } from './components/BudgetAlerts'
+import { BudgetPanel } from './components/BudgetPanel'
 import { ImportDialog } from './components/ImportDialog'
 import { SpendingCharts } from './components/SpendingCharts'
 import { SummaryCards } from './components/SummaryCards'
 import { TransactionForm } from './components/TransactionForm'
 import { TransactionList } from './components/TransactionList'
+import { useBudgets } from './hooks/useBudgets'
 import { useTransactions } from './hooks/useTransactions'
 import { formatMonth, monthOf, todayISO } from './lib/dates'
-import { balanceByDate, expensesOnly, inMonth } from './lib/stats'
+import { balanceByDate, budgetStatuses, expensesOnly, inMonth } from './lib/stats'
 import { loadCurrency, saveCurrency } from './lib/storage'
 import { CATEGORIES, INCOME_CATEGORIES, type Category, type Transaction } from './types'
 
@@ -14,6 +17,7 @@ const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR
 
 function App() {
   const { transactions, add, addMany, update, remove } = useTransactions()
+  const { budgets, setBudget } = useBudgets()
   const [importing, setImporting] = useState(false)
   const [month, setMonth] = useState(monthOf(todayISO()))
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All')
@@ -24,6 +28,8 @@ function App() {
   const monthTransactions = useMemo(() => inMonth(transactions, month), [transactions, month])
 
   const monthExpenses = useMemo(() => expensesOnly(monthTransactions), [monthTransactions])
+
+  const statuses = useMemo(() => budgetStatuses(monthTransactions, budgets), [monthTransactions, budgets])
 
   // Balances use every transaction, so filtering the list never changes the running balance.
   const balances = useMemo(() => balanceByDate(transactions), [transactions])
@@ -111,6 +117,8 @@ function App() {
         </label>
       </div>
 
+      <BudgetAlerts statuses={statuses} currency={currency} />
+
       <SummaryCards all={transactions} monthTransactions={monthTransactions} month={month} currency={currency} />
 
       <main className="layout">
@@ -130,6 +138,12 @@ function App() {
               setMonth(monthOf(input.date))
             }}
             onCancelEdit={() => setEditing(null)}
+          />
+          <BudgetPanel
+            monthTransactions={monthTransactions}
+            budgets={budgets}
+            currency={currency}
+            onChange={setBudget}
           />
         </aside>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadTransactions, saveTransactions } from './storage'
+import { loadBudgets, loadTransactions, saveBudgets, saveTransactions } from './storage'
 
 /** A minimal in-memory stand-in for the browser's localStorage. */
 function memoryStorage(): Storage {
@@ -69,5 +69,31 @@ describe('storage', () => {
       ]),
     )
     expect(loadTransactions(storage).map((t) => t.id)).toEqual(['ok'])
+  })
+})
+
+describe('budget storage', () => {
+  it('round-trips budgets', () => {
+    const storage = memoryStorage()
+    saveBudgets({ Groceries: 40000, Transport: 15050 }, storage)
+    expect(loadBudgets(storage)).toEqual({ Groceries: 40000, Transport: 15050 })
+  })
+
+  it('returns no budgets for missing or corrupt data', () => {
+    const storage = memoryStorage()
+    expect(loadBudgets(storage)).toEqual({})
+    storage.setItem('fts.budgets.v1', '{not json')
+    expect(loadBudgets(storage)).toEqual({})
+    storage.setItem('fts.budgets.v1', '[1,2,3]')
+    expect(loadBudgets(storage)).toEqual({})
+  })
+
+  it('drops invalid categories and amounts', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'fts.budgets.v1',
+      JSON.stringify({ Groceries: 5000, Salary: 5000, Health: 0, Shopping: -1, Transport: 1.5, Other: '100' }),
+    )
+    expect(loadBudgets(storage)).toEqual({ Groceries: 5000 })
   })
 })

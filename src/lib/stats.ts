@@ -1,4 +1,4 @@
-import { CATEGORIES, type Category, type Transaction } from '../types'
+import { CATEGORIES, type Budgets, type Category, type ExpenseCategory, type Transaction } from '../types'
 import { daysInMonth, monthOf } from './dates'
 
 /** Plain sum of the amounts. Filter to one type first (see `expensesOnly` / `incomeOnly`). */
@@ -58,6 +58,60 @@ export function totalsByCategory(
   return CATEGORIES.filter((c) => totals.has(c))
     .map((category) => ({ category, cents: totals.get(category)! }))
     .sort((a, b) => b.cents - a.cents)
+}
+
+/** Spending at or above this share of a budget counts as "close to the limit". */
+export const NEAR_BUDGET_RATIO = 0.8
+
+export type BudgetState = 'ok' | 'near' | 'over'
+
+export interface BudgetStatus {
+  category: ExpenseCategory
+  budgetCents: number
+  spentCents: number
+  /** Budget minus spending; negative once the budget is exceeded. */
+  remainingCents: number
+  /** Spending as a share of the budget (1 = exactly at the limit; can be above 1). */
+  ratio: number
+  state: BudgetState
+}
+
+/**
+ * How each budgeted category is doing, for the transactions passed in (normally one month).
+ * Categories without a budget are left out; the result follows the order of CATEGORIES.
+ */
+export function budgetStatuses(transactions: Transaction[], budgets: Budgets): BudgetStatus[] {
+  const spent = spentByCategory(transactions)
+  return CATEGORIES.flatMap((category) => {
+    const budgetCents = budgets[category]
+    if (budgetCents === undefined) return []
+    const spentCents = spent.get(category) ?? 0
+    return [
+      {
+        category,
+        budgetCents,
+        spentCents,
+        remainingCents: budgetCents - spentCents,
+        ratio: spentCents / budgetCents,
+        state: budgetState(spentCents, budgetCents),
+      },
+    ]
+  })
+}
+
+/** Total spending per category (expenses only). Categories with no spending have no entry. */
+export function spentByCategory(transactions: Transaction[]): Map<Category, number> {
+  const spent = new Map<Category, number>()
+  for (const t of expensesOnly(transactions)) {
+    spent.set(t.category, (spent.get(t.category) ?? 0) + t.amountCents)
+  }
+  return spent
+}
+
+/** `over` only once spending exceeds the budget; exactly at the limit is still `near`. */
+export function budgetState(spentCents: number, budgetCents: number): BudgetState {
+  if (spentCents > budgetCents) return 'over'
+  return spentCents / budgetCents >= NEAR_BUDGET_RATIO ? 'near' : 'ok'
 }
 
 /** One entry per day of the month (including zero-spend days), for the daily chart. */
