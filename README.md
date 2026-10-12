@@ -11,6 +11,7 @@ A web app for logging daily income and spending, tracking your balance, and seei
 - **Add, edit and delete transactions** with an amount, category, date and an optional note
 - **Income and spending:** switch between Expense and Income when adding a transaction, each with its own categories
 - **Running balance:** every day shows its net amount and the balance at the end of that day
+- **Import a bank statement (CSV):** pick the file you downloaded from online banking and the app finds the date, description and amount columns, guesses a category for each row, skips ones you already added, and lets you review everything before saving. The file is read in your browser and never uploaded. There's a [sample statement](public/sample-statement.csv) to try it with
 - **Daily view:** transactions are grouped by day, newest first
 - **Monthly summary:** balance, income, spending, net, daily average, top category and savings rate
 - **Charts:** spending per day and spending by category (with hover tooltips)
@@ -58,6 +59,7 @@ src/
 ├── App.tsx                  # Page layout, filters and app state
 ├── types.ts                 # Transaction type and category list
 ├── components/
+│   ├── ImportDialog.tsx     # CSV statement import with column mapping and a preview
 │   ├── TransactionForm.tsx  # Add / edit form with validation
 │   ├── TransactionList.tsx  # Transactions grouped by day
 │   ├── SummaryCards.tsx     # Balance / income / spent / net / average / savings rate
@@ -65,6 +67,8 @@ src/
 ├── hooks/
 │   └── useTransactions.ts   # State + automatic saving to localStorage
 └── lib/                     # Plain functions with unit tests
+    ├── csv.ts               # CSV parsing, date/amount reading, column guessing, duplicate check
+    ├── categorize.ts        # Guesses a category from a statement description
     ├── money.ts             # Parsing and formatting amounts
     ├── dates.ts             # Local-date helpers
     ├── stats.ts             # Totals, net, running balance, grouping, per-day and per-category sums
@@ -75,6 +79,7 @@ src/
 
 - **Money is stored in cents (integers).** Floating-point maths gets money wrong (`0.1 + 0.2 !== 0.3`), so `"12.50"` is saved as `1250`.
 - **Dates are local `YYYY-MM-DD` strings.** This avoids the classic bug where a transaction shows up on the wrong day because of time zones.
+- **Imports show a preview and never drop rows silently.** Anything that can't be read is listed with the reason, and likely duplicates are unticked so re-importing an overlapping statement doesn't double-count.
 - **Logic lives in `src/lib`, separate from the UI.** Calculations are plain functions, which makes them easy to unit test.
 - **Saved data is validated when it's loaded.** Corrupted or hand-edited localStorage entries are skipped instead of crashing the app.
 
@@ -86,6 +91,8 @@ Every push to `main` runs the lint, tests and build in GitHub Actions, then publ
 
 - [x] Income tracking and a running balance
 - [ ] Monthly budgets per category, with warnings when you go over
-- [ ] Import and export as CSV
+- [x] Import a bank statement from CSV
+- [ ] Export your data as CSV
+- [ ] Import PDF statements
 - [ ] Cloud sync and user accounts (e.g. with Supabase)
 - [ ] Recurring transactions (rent, subscriptions)

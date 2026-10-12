@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ImportDialog } from './components/ImportDialog'
 import { SpendingCharts } from './components/SpendingCharts'
 import { SummaryCards } from './components/SummaryCards'
 import { TransactionForm } from './components/TransactionForm'
@@ -12,7 +13,8 @@ import { CATEGORIES, INCOME_CATEGORIES, type Category, type Transaction } from '
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
 
 function App() {
-  const { transactions, add, update, remove } = useTransactions()
+  const { transactions, add, addMany, update, remove } = useTransactions()
+  const [importing, setImporting] = useState(false)
   const [month, setMonth] = useState(monthOf(todayISO()))
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All')
   const [search, setSearch] = useState('')
@@ -53,15 +55,34 @@ function App() {
           <h1>Spending Tracker</h1>
           <p className="muted">Log what comes in and goes out each day, and see where your money goes.</p>
         </div>
-        <label className="inline">
-          Currency
-          <select value={currency} onChange={(e) => changeCurrency(e.target.value)}>
-            {CURRENCIES.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
+        <div className="header-actions">
+          <button type="button" onClick={() => setImporting(true)}>
+            Import statement
+          </button>
+          <label className="inline">
+            Currency
+            <select value={currency} onChange={(e) => changeCurrency(e.target.value)}>
+              {CURRENCIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
+
+      {importing && (
+        <ImportDialog
+          existing={transactions}
+          currency={currency}
+          onClose={() => setImporting(false)}
+          onImport={(inputs) => {
+            addMany(inputs)
+            // Show the newest month that was imported, so the new transactions are on screen.
+            const newest = inputs.map((t) => t.date).sort().at(-1)
+            if (newest) setMonth(monthOf(newest))
+          }}
+        />
+      )}
 
       <div className="filters">
         <label className="inline">

@@ -95,6 +95,150 @@ h2 {
   flex-wrap: wrap;
 }
 
+.header-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* ---------- Import dialog ---------- */
+
+.import-dialog {
+  width: min(900px, 94vw);
+  max-height: 90vh;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.import-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-head,
+.dialog-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog-foot {
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.import-dialog h3 {
+  font-size: 0.9375rem;
+}
+
+.file-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.mapping {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.mapping-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.check input {
+  width: auto;
+  min-height: 0;
+}
+
+.import-summary {
+  padding: 8px 12px;
+  background: var(--hover);
+  border-radius: 8px;
+}
+
+.import-table-wrap {
+  overflow: auto;
+  min-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.import-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.import-table th,
+.import-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.import-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-top: none;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.import-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.import-table td input[type='checkbox'] {
+  width: auto;
+  min-height: 0;
+}
+
+.import-table select {
+  min-height: 32px;
+  padding: 2px 6px;
+}
+
+.import-table tr.skipped td {
+  opacity: 0.55;
+}
+
+.import-table tr.unreadable td {
+  color: var(--danger);
+}
+
+.chip.dup {
+  margin-left: 8px;
+  background: var(--hover);
+  color: var(--text-secondary);
+}
+
 .layout {
   display: grid;
   grid-template-columns: 320px 1fr;
