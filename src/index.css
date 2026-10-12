@@ -142,6 +142,14 @@ h2 {
   font-size: 0.9375rem;
 }
 
+.notice {
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warning);
+  border-radius: 8px;
+}
+
 .file-pick {
   display: flex;
   flex-direction: column;
