@@ -88,7 +88,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>
-          Financier <span className="byline">by JK</span>
+          Telemachus <span className="byline">by JK</span>
         </h1>
         <div className="header-actions">
           <button type="button" onClick={() => setImporting(true)}>
@@ -121,7 +121,7 @@ function App() {
         {tab === 'overview' &&
           (transactions.length === 0 ? (
             <div className="card empty welcome">
-              <h2>Welcome to Financier</h2>
+              <h2>Welcome to Telemachus</h2>
               <p className="muted">Add your first transaction, or import a bank statement to fill things in quickly.</p>
               <div className="welcome-actions">
                 <button type="button" onClick={() => setImporting(true)}>
