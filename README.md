@@ -11,7 +11,7 @@ A web app for logging daily income and spending, tracking your balance, and seei
 - **Add, edit and delete transactions** with an amount, category, date and an optional note
 - **Income and spending:** switch between Expense and Income when adding a transaction, each with its own categories
 - **Running balance:** every day shows its net amount and the balance at the end of that day
-- **Import a bank statement (CSV):** pick the file you downloaded from online banking and the app finds the date, description and amount columns, guesses a category for each row, skips ones you already added, and lets you review everything before saving. The file is read in your browser and never uploaded. There's a [sample statement](public/sample-statement.csv) to try it with
+- **Import a bank statement (CSV or PDF):** pick the file you downloaded from online banking and the app finds the date, description and amount columns, guesses a category for each row, skips ones you already added, and lets you review everything before saving. The file is read in your browser and never uploaded. PDF reading is best-effort (layouts vary between banks and scanned PDFs can't be read), so the preview asks you to check each row. There are sample statements to try: [CSV](public/sample-statement.csv) and [PDF](public/sample-statement.pdf)
 - **Daily view:** transactions are grouped by day, newest first
 - **Monthly summary:** balance, income, spending, net, daily average, top category and savings rate
 - **Monthly budgets:** set a limit for each spending category and see a progress bar for the month, with a warning at 80% and when you go over
@@ -28,6 +28,7 @@ A web app for logging daily income and spending, tracking your balance, and seei
 | UI | [React 19](https://react.dev) + [TypeScript](https://www.typescriptlang.org) |
 | Build tool | [Vite](https://vite.dev) |
 | Charts | [Recharts](https://recharts.org) |
+| PDF reading | [pdf.js](https://mozilla.github.io/pdf.js/) (loaded only when a PDF is chosen) |
 | Tests | [Vitest](https://vitest.dev) |
 | Linting | [oxlint](https://oxc.rs) |
 | CI / hosting | GitHub Actions → GitHub Pages |
@@ -60,7 +61,7 @@ src/
 ├── App.tsx                  # Page layout, filters and app state
 ├── types.ts                 # Transaction type and category list
 ├── components/
-│   ├── ImportDialog.tsx     # CSV statement import with column mapping and a preview
+│   ├── ImportDialog.tsx     # CSV / PDF statement import with column mapping and a preview
 │   ├── TransactionForm.tsx  # Add / edit form with validation
 │   ├── TransactionList.tsx  # Transactions grouped by day
 │   ├── SummaryCards.tsx     # Balance / income / spent / net / average / savings rate
@@ -72,6 +73,8 @@ src/
 │   └── useBudgets.ts        # Budgets + automatic saving to localStorage
 └── lib/                     # Plain functions with unit tests
     ├── csv.ts               # CSV parsing, date/amount reading, column guessing, duplicate check
+    ├── pdf.ts               # Reads a PDF with pdf.js and returns its text with positions
+    ├── pdfRows.ts           # Rebuilds a transaction table from positioned PDF text
     ├── categorize.ts        # Guesses a category from a statement description
     ├── money.ts             # Parsing and formatting amounts
     ├── dates.ts             # Local-date helpers
@@ -98,6 +101,6 @@ Every push to `main` runs the lint, tests and build in GitHub Actions, then publ
 - [x] Monthly budgets per category, with warnings when you go over
 - [x] Import a bank statement from CSV
 - [ ] Export your data as CSV
-- [ ] Import PDF statements
+- [x] Import PDF statements (best-effort; scanned PDFs would need OCR)
 - [ ] Cloud sync and user accounts (e.g. with Supabase)
 - [ ] Recurring transactions (rent, subscriptions)

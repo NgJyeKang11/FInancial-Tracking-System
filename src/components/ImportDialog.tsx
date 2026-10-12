@@ -11,6 +11,7 @@ import {
 } from '../lib/csv'
 import { formatDayHeading } from '../lib/dates'
 import { formatCents } from '../lib/money'
+import { describePdfProblem, PdfImportError, readPdfStatement } from '../lib/pdf'
 import { CATEGORIES_BY_TYPE, type Category, type Transaction, type TransactionInput } from '../types'
 
 interface Props {
@@ -26,12 +27,15 @@ interface RowEdit {
   include?: boolean
 }
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024
+const MAX_CSV_BYTES = 5 * 1024 * 1024
+const MAX_PDF_BYTES = 20 * 1024 * 1024
 
-/** A pop-up for importing a bank statement from a CSV file, with a preview before anything is saved. */
+/** A pop-up for importing a bank statement from a CSV or PDF file, with a preview before anything is saved. */
 export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [fileName, setFileName] = useState('')
+  const [fromPdf, setFromPdf] = useState(false)
+  const [reading, setReading] = useState(false)
   const [error, setError] = useState('')
   const [table, setTable] = useState<string[][]>([])
   const [hasHeader, setHasHeader] = useState(true)
@@ -77,18 +81,34 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
 
   const loadFile = async (file: File) => {
     setError('')
-    if (file.size > MAX_FILE_BYTES) {
-      setError('That file is over 5 MB, which is too big for a statement. Try exporting a shorter date range.')
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+    if (file.size > (isPdf ? MAX_PDF_BYTES : MAX_CSV_BYTES)) {
+      setError('That file is too big for a statement. Try downloading a shorter date range.')
       return
     }
-    const rows = parseCsv(await file.text())
-    if (rows.length < 2) {
-      setError("That doesn't look like a CSV statement. Export it from your bank as CSV, not PDF.")
-      return
+
+    let rows: string[][]
+    if (isPdf) {
+      setReading(true)
+      try {
+        rows = await readPdfStatement(file)
+      } catch (e) {
+        setError(e instanceof PdfImportError ? describePdfProblem(e.problem) : "That PDF couldn't be read.")
+        return
+      } finally {
+        setReading(false)
+      }
+    } else {
+      rows = parseCsv(await file.text())
+      if (rows.length < 2) {
+        setError("That doesn't look like a CSV statement. Download it from your bank as CSV, or choose a PDF.")
+        return
+      }
     }
     const header = !looksLikeData(rows[0])
     const body = header ? rows.slice(1) : rows
     const guess = guessColumns(header ? rows[0] : [])
+    setFromPdf(isPdf)
     setFileName(file.name)
     setTable(rows)
     setHasHeader(header)
@@ -129,11 +149,15 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
       </header>
 
       <p className="muted">
-        Download your statement from online banking as a <strong>CSV</strong> file (PDF isn't supported) and choose it
-        below. Nothing is uploaded anywhere: the file is read in your browser. You can review everything before it is
-        added.{' '}
+        Choose the statement you downloaded from online banking, as a <strong>CSV</strong> or a <strong>PDF</strong>{' '}
+        file. Nothing is uploaded anywhere: the file is read in your browser. You can review everything before it is
+        added. Try a sample:{' '}
         <a href={`${import.meta.env.BASE_URL}sample-statement.csv`} download>
-          Download a sample file
+          CSV
+        </a>{' '}
+        or{' '}
+        <a href={`${import.meta.env.BASE_URL}sample-statement.pdf`} download>
+          PDF
         </a>
         .
       </p>
@@ -142,13 +166,15 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
         <span>Statement file</span>
         <input
           type="file"
-          accept=".csv,.txt,text/csv"
+          accept=".csv,.txt,.pdf,text/csv,application/pdf"
+          disabled={reading}
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) void loadFile(file)
           }}
         />
       </label>
+      {reading && <p role="status">Reading the PDF…</p>}
       {error && (
         <p className="error" role="alert">
           {error}
@@ -160,6 +186,12 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
           <h3>
             {fileName} · {dataRows.length} rows
           </h3>
+          {fromPdf && (
+            <p className="notice" role="note">
+              This was read from a PDF, and PDF layouts vary, so please check each row against your statement:
+              dates, amounts, and whether it's money in or out. CSV files are more reliable if your bank offers one.
+            </p>
+          )}
           <div className="mapping">
             {columnSelect('date', 'Date column')}
             {columnSelect('description', 'Description column')}
