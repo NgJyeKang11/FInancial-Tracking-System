@@ -13,10 +13,10 @@ interface Props {
   /** When set, the form edits this transaction instead of adding a new one. */
   editing: Transaction | null
   onSubmit: (input: TransactionInput) => void
-  onCancelEdit: () => void
+  onCancel: () => void
 }
 
-export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
+export function TransactionForm({ editing, onSubmit, onCancel }: Props) {
   const [type, setType] = useState<TransactionType>(editing?.type ?? 'expense')
   const [amount, setAmount] = useState(editing ? centsToInput(editing.amountCents) : '')
   const [category, setCategory] = useState<Category>(editing?.category ?? CATEGORIES_BY_TYPE.expense[0])
@@ -43,17 +43,11 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
       return
     }
     onSubmit({ type, amountCents, category, date, note: note.trim() })
-    setError('')
-    if (!editing) {
-      // Keep type, category and date so logging several entries from one day is quick.
-      setAmount('')
-      setNote('')
-    }
   }
 
   return (
-    <form className="card form" onSubmit={handleSubmit} noValidate>
-      <h2>{editing ? 'Edit transaction' : 'Add transaction'}</h2>
+    <form className="form" onSubmit={handleSubmit} noValidate>
+      <h2 id="form-title">{editing ? 'Edit transaction' : 'Add transaction'}</h2>
 
       <div className="segmented" role="group" aria-label="Transaction type">
         {(['expense', 'income'] as const).map((value) => (
@@ -78,7 +72,7 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
           onChange={(e) => setAmount(e.target.value)}
           aria-invalid={error !== ''}
           aria-describedby={error ? 'form-error' : undefined}
-          autoFocus={editing !== null}
+          autoFocus
         />
       </label>
 
@@ -115,14 +109,12 @@ export function TransactionForm({ editing, onSubmit, onCancelEdit }: Props) {
       )}
 
       <div className="form-actions">
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
         <button type="submit" className="primary">
           {editing ? 'Save changes' : 'Add'}
         </button>
-        {editing && (
-          <button type="button" onClick={onCancelEdit}>
-            Cancel
-          </button>
-        )}
       </div>
     </form>
   )

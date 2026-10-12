@@ -3,13 +3,17 @@ import { daysInMonth, monthOf, todayISO } from '../lib/dates'
 import { balanceAsOf, expensesOnly, incomeOnly, netCents, totalCents, totalsByCategory } from '../lib/stats'
 import type { Transaction } from '../types'
 
+export type StatKey = 'balance' | 'income' | 'spent' | 'net' | 'average' | 'top' | 'savings'
+
 interface Props {
-  /** All transactions, used for "today" and the running balance. */
+  /** All transactions, used for the running balance. */
   all: Transaction[]
   /** Transactions in the selected month. */
   monthTransactions: Transaction[]
   month: string
   currency: string
+  /** Which numbers to show, in this order. */
+  show: StatKey[]
 }
 
 type Tone = 'positive' | 'negative'
@@ -17,9 +21,8 @@ type Tone = 'positive' | 'negative'
 /** Colours a signed amount: green when above zero, red when below, plain at zero. */
 const toneOf = (cents: number): Tone | undefined => (cents > 0 ? 'positive' : cents < 0 ? 'negative' : undefined)
 
-export function SummaryCards({ all, monthTransactions, month, currency }: Props) {
+export function SummaryCards({ all, monthTransactions, month, currency, show }: Props) {
   const today = todayISO()
-  const todayTotal = totalCents(expensesOnly(all.filter((t) => t.date === today)))
   const spent = totalCents(expensesOnly(monthTransactions))
   const income = totalCents(incomeOnly(monthTransactions))
   const net = netCents(monthTransactions)
@@ -34,23 +37,22 @@ export function SummaryCards({ all, monthTransactions, month, currency }: Props)
   const top = totalsByCategory(monthTransactions)[0]
   const savingsRate = income > 0 ? `${Math.round((net / income) * 100)}%` : '—'
 
-  const cards: { label: string; value: string; tone?: Tone }[] = [
-    { label: 'Balance', value: formatCents(balance, currency), tone: toneOf(balance) },
-    { label: 'Income this month', value: formatCents(income, currency) },
-    { label: 'Spent this month', value: formatCents(spent, currency) },
-    { label: 'Net this month', value: formatCents(net, currency), tone: toneOf(net) },
-    { label: 'Spent today', value: formatCents(todayTotal, currency) },
-    { label: 'Daily average', value: formatCents(dailyAverage, currency) },
-    { label: 'Top category', value: top ? top.category : '—' },
-    { label: 'Savings rate', value: savingsRate, tone: income > 0 ? toneOf(net) : undefined },
-  ]
+  const cards: Record<StatKey, { label: string; value: string; tone?: Tone }> = {
+    balance: { label: 'Balance', value: formatCents(balance, currency), tone: toneOf(balance) },
+    income: { label: 'Income', value: formatCents(income, currency) },
+    spent: { label: 'Spent', value: formatCents(spent, currency) },
+    net: { label: 'Net', value: formatCents(net, currency), tone: toneOf(net) },
+    average: { label: 'Daily average', value: formatCents(dailyAverage, currency) },
+    top: { label: 'Top category', value: top ? top.category : '—' },
+    savings: { label: 'Savings rate', value: savingsRate, tone: income > 0 ? toneOf(net) : undefined },
+  }
 
   return (
     <section className="summary" aria-label="Summary">
-      {cards.map((c) => (
-        <div key={c.label} className="card stat">
-          <span className="stat-label">{c.label}</span>
-          <span className={c.tone ? `stat-value ${c.tone}` : 'stat-value'}>{c.value}</span>
+      {show.map((key) => (
+        <div key={key} className="card stat">
+          <span className="stat-label">{cards[key].label}</span>
+          <span className={cards[key].tone ? `stat-value ${cards[key].tone}` : 'stat-value'}>{cards[key].value}</span>
         </div>
       ))}
     </section>

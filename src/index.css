@@ -76,10 +76,29 @@ h1 .byline {
 }
 
 .app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
   font-size: 0.8125rem;
-  text-align: center;
+}
+
+.app-footer .currency {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  color: inherit;
+}
+
+.app-footer select {
+  min-height: 32px;
+  padding: 2px 6px;
+  font-size: 0.8125rem;
 }
 
 h2 {
@@ -105,21 +124,90 @@ h2 {
 .app-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
 
 .header-actions {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  gap: 8px;
 }
 
-/* ---------- Import dialog ---------- */
+/* ---------- Tabs and month ---------- */
 
-.import-dialog {
-  width: min(900px, 94vw);
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.tabs button:hover {
+  background: transparent;
+  color: var(--text);
+}
+
+.tabs button.selected {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.month-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 4px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.month-picker span {
+  min-width: 9.5em;
+  text-align: center;
+}
+
+.month-picker button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.month-picker button:hover {
+  background: var(--hover);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- Dialogs ---------- */
+
+.dialog {
   max-height: 90vh;
   padding: 20px;
   background: var(--surface);
@@ -128,14 +216,22 @@ h2 {
   border-radius: var(--radius);
 }
 
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.form-dialog {
+  width: min(420px, 94vw);
+}
+
+.import-dialog {
+  width: min(900px, 94vw);
+}
+
 .import-dialog[open] {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.import-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
 }
 
 .dialog-head,
@@ -270,42 +366,6 @@ h2 {
   color: var(--text-secondary);
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
-.layout aside {
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  /* The sidebar is tall now (form + budgets), so let it scroll instead of running off screen. */
-  max-height: calc(100vh - 32px);
-  overflow-y: auto;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-@media (max-width: 800px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-  .layout aside {
-    position: static;
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -313,7 +373,79 @@ h2 {
   padding: 16px;
 }
 
-.section-title {
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+button.link {
+  min-height: 0;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.875rem;
+}
+
+button.link:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+/* ---------- Overview ---------- */
+
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recent ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recent li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.recent-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recent-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-main .muted {
+  font-size: 0.8125rem;
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin-top: 8px;
 }
 
@@ -330,10 +462,6 @@ label {
 
 label.inline {
   min-width: 140px;
-}
-
-label.grow {
-  flex: 1;
 }
 
 input,
@@ -405,21 +533,42 @@ button.danger {
 
 .filters {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.filters .grow {
+  flex: 1;
+  min-width: 180px;
 }
 
 /* ---------- Summary ---------- */
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 520px) {
   .summary {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
+  }
+  /* With an odd number of cards, the first (the headline number) gets the full width. */
+  .summary .stat:first-child:nth-last-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .tabs {
+    flex: 1 1 100%;
+    gap: 0;
+  }
+  .month-picker {
+    margin: 0 auto;
+  }
+  .tabs button {
+    flex: 1;
+    padding: 10px 4px;
+    font-size: 0.875rem;
   }
 }
 
@@ -493,11 +642,11 @@ button.danger {
 
 .budgets ul {
   list-style: none;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px 32px;
 }
 
 .budget-head {
@@ -633,24 +782,23 @@ button.danger {
 .day-header {
   display: flex;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--hover);
+  padding: 12px 16px 6px;
+  font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .day-header h3 {
-  font-size: 0.875rem;
+  font-size: inherit;
 }
 
 .day-totals {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  gap: 12px;
 }
 
 .day-totals .muted {
-  font-size: 0.75rem;
   font-weight: 400;
 }
 
@@ -672,10 +820,6 @@ button.danger {
   gap: 12px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
-}
-
-.row.editing {
-  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .row-main {
@@ -709,6 +853,17 @@ button.danger {
 .row-actions {
   display: flex;
   gap: 4px;
+}
+
+/* Edit / Delete appear on hover or keyboard focus; touch screens always show them. */
+@media (hover: hover) {
+  .row-actions {
+    opacity: 0;
+  }
+  .row:hover .row-actions,
+  .row:focus-within .row-actions {
+    opacity: 1;
+  }
 }
 
 .row-actions button {
