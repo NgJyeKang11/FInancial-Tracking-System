@@ -15,6 +15,7 @@ interface Props {
     signIn: () => Promise<void>
     signOut: () => Promise<void>
   }
+  /** Asks to change the currency; the parent decides whether to convert or relabel. */
   onCurrencyChange: (currency: string) => void
   usage: (category: string) => number
   onAddCategory: (category: CustomCategory) => void
@@ -85,7 +86,10 @@ export function SettingsPage({
 
       <section className="card settings-card" aria-labelledby="currency-title">
         <h2 id="currency-title">Currency</h2>
-        <p className="muted">How amounts are shown. It doesn't convert anything.</p>
+        <p className="muted">
+          The currency your amounts are in. When you change it, you can convert everything at today's exchange rate
+          or just change the label.
+        </p>
         <select
           aria-labelledby="currency-title"
           className="settings-select"

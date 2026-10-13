@@ -27,7 +27,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 - **Monthly budgets:** set a limit for each spending category and see a progress bar for the month, with a warning at 80% and when you go over
 - **Charts:** spending per day and spending by category (with hover tooltips), plus a table comparing each category with last month
 - **Filters:** see all time or one month, filter by category, or search your notes
-- **Currency picker** (USD, EUR, MYR, SGD and more)
+- **Currencies with conversion** (USD, EUR, MYR, SGD and more): changing currency either converts every amount at the European Central Bank's daily reference rate (fetched at most twice a day, with built-in rates as a fallback) or just changes the label when the numbers were already in that currency. Both can be undone
 - **Saves automatically** in your browser, so there's no account or server needed
 - **Backup and export:** download everything as a backup file and restore it later (or in another browser), or export transactions as CSV for a spreadsheet
 - **Reset everything:** a kill switch in Settings that deletes all data and resets the currency (and the signed-in account's copy). It lists what will go, offers a backup first, only works after typing RESET, and can be undone for 10 seconds
@@ -94,6 +94,7 @@ src/
 │   ├── SettingsPage.tsx     # Account, currency, your categories, backups, danger zone
 │   ├── DataMenu.tsx         # Download / restore a backup, export CSV
 │   ├── ResetDialog.tsx      # The "Reset everything?" warning, unlocked by typing RESET
+│   ├── CurrencyDialog.tsx   # "Convert my amounts" or "just change the label"
 │   └── SpendingCharts.tsx   # Daily and per-category bar charts
 ├── hooks/
 │   ├── useTransactions.ts   # State + automatic saving to localStorage
@@ -102,6 +103,7 @@ src/
 │   ├── useStoredState.ts    # State that's saved to localStorage whenever it changes
 │   ├── useCategories.ts     # Shares your own categories with every category picker
 │   ├── useAccountActions.ts # Sign-in / sign-out button behaviour, shared by the header and Settings
+│   ├── useRates.ts          # Today's exchange rates, refreshed when the saved ones are over 12 hours old
 │   └── useCloudSync.ts      # Keeps the data in step with the signed-in Google account
 └── lib/                     # Plain functions with unit tests
     ├── csv.ts               # CSV parsing, date/amount reading, column guessing, duplicate check
@@ -111,6 +113,7 @@ src/
     ├── money.ts             # Parsing and formatting amounts
     ├── dates.ts             # Local-date helpers
     ├── recurring.ts         # Works out which monthly items are due and adds them
+    ├── rates.ts             # Exchange rates (ECB via frankfurter.dev) and converting amounts
     ├── stats.ts             # Totals, net, running balance, grouping, per-day and per-category sums, budget status
     ├── storage.ts           # Loading/saving with validation
     ├── sync.ts              # Checking account data and merging a device into an account
