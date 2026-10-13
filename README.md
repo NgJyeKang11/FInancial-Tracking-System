@@ -4,7 +4,9 @@ A web app for logging daily income and spending, tracking your balance, and seei
 
 **Live demo:** https://ngjyekang11.github.io/Telemachus/
 
-![Screenshot of the Telemachus dashboard](docs/screenshot.png)
+![The Telemachus overview: balance, spending, income, a budget warning and recent transactions](docs/screenshot.png)
+
+![The Insights page: monthly stats, charts of spending per day and per category, and a comparison with last month](docs/insights.png)
 
 Built with assistance from [Claude](https://claude.com/claude-code).
 
