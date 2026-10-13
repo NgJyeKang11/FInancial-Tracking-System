@@ -4,12 +4,13 @@ const TRANSACTIONS_KEY = 'fts.transactions.v1'
 const BUDGETS_KEY = 'fts.budgets.v1'
 const RECURRING_KEY = 'fts.recurring.v1'
 const CURRENCY_KEY = 'fts.currency'
+const SYNCED_USER_KEY = 'fts.syncedUser'
 
 /**
  * Checks one saved entry and returns it as a Transaction, or null if it's malformed.
  * Entries saved before income existed have no `type`; they were all spending.
  */
-function parseTransaction(value: unknown): Transaction | null {
+export function parseTransaction(value: unknown): Transaction | null {
   if (typeof value !== 'object' || value === null) return null
   const t = value as Record<string, unknown>
   const type = t.type ?? 'expense'
@@ -54,18 +55,21 @@ export function saveTransactions(transactions: Transaction[], storage: Storage =
   }
 }
 
-/** Reads saved budgets, keeping only valid expense categories with a positive whole-cent limit. */
+/** Checks saved budgets, keeping only valid expense categories with a positive whole-cent limit. */
+export function parseBudgets(value: unknown): Budgets {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const saved = value as Record<string, unknown>
+  const budgets: Budgets = {}
+  for (const category of CATEGORIES) {
+    const cents = saved[category]
+    if (Number.isSafeInteger(cents) && (cents as number) > 0) budgets[category] = cents as number
+  }
+  return budgets
+}
+
 export function loadBudgets(storage: Storage = localStorage): Budgets {
   try {
-    const parsed: unknown = JSON.parse(storage.getItem(BUDGETS_KEY) ?? '{}')
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
-    const saved = parsed as Record<string, unknown>
-    const budgets: Budgets = {}
-    for (const category of CATEGORIES) {
-      const cents = saved[category]
-      if (Number.isSafeInteger(cents) && (cents as number) > 0) budgets[category] = cents as number
-    }
-    return budgets
+    return parseBudgets(JSON.parse(storage.getItem(BUDGETS_KEY) ?? '{}'))
   } catch {
     return {}
   }
@@ -80,7 +84,7 @@ export function saveBudgets(budgets: Budgets, storage: Storage = localStorage): 
 }
 
 /** Checks one saved recurring item, or returns null if it's malformed. */
-function parseRecurring(value: unknown): Recurring | null {
+export function parseRecurring(value: unknown): Recurring | null {
   if (typeof value !== 'object' || value === null) return null
   const r = value as Record<string, unknown>
   if (r.type !== 'expense' && r.type !== 'income') return null
@@ -141,5 +145,27 @@ export function saveCurrency(currency: string, storage: Storage = localStorage):
     storage.setItem(CURRENCY_KEY, currency)
   } catch {
     // Ignore: currency choice is a convenience, not critical data.
+  }
+}
+
+/**
+ * The account this device last synced with. Data on the device is only merged into an account
+ * the first time; after that the account's copy wins, so something deleted on another device
+ * doesn't come back from this one.
+ */
+export function loadSyncedUser(storage: Storage = localStorage): string | null {
+  try {
+    return storage.getItem(SYNCED_USER_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function saveSyncedUser(uid: string | null, storage: Storage = localStorage): void {
+  try {
+    if (uid === null) storage.removeItem(SYNCED_USER_KEY)
+    else storage.setItem(SYNCED_USER_KEY, uid)
+  } catch {
+    // Without it the next sign-in merges again, which only re-adds items; nothing is lost.
   }
 }

@@ -57,6 +57,14 @@ export interface Recurring {
   lastMonth: string
 }
 
+/** Everything the app saves, as one bundle (what's stored in a signed-in account). */
+export interface AppData {
+  transactions: Transaction[]
+  budgets: Budgets
+  recurring: Recurring[]
+  currency: string
+}
+
 /**
  * Monthly spending limits in cents, one per expense category. A category with no entry has
  * no budget. The same limits apply to every month.

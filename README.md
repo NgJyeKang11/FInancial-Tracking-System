@@ -24,6 +24,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 - **Filters:** see all time or one month, filter by category, or search your notes
 - **Currency picker** (USD, EUR, MYR, SGD and more)
 - **Saves automatically** in your browser, so there's no account or server needed
+- **Optional Google sign-in:** sign in to keep your data in your Google account and use it on any device. Changes sync automatically, and signing out removes the data from that device (see [Google sign-in setup](#google-sign-in-setup))
 - **Light and dark mode** (follows your system setting) and a layout that works on phones
 
 ## Tech stack
@@ -34,6 +35,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 | Build tool | [Vite](https://vite.dev) |
 | Charts | [Recharts](https://recharts.org) |
 | PDF reading | [pdf.js](https://mozilla.github.io/pdf.js/) (loaded only when a PDF is chosen) |
+| Sign-in and sync | [Firebase](https://firebase.google.com) Authentication (Google) + Cloud Firestore (optional, loaded only when set up) |
 | Tests | [Vitest](https://vitest.dev) |
 | Linting | [oxlint](https://oxc.rs) |
 | CI / hosting | GitHub Actions → GitHub Pages |
@@ -77,11 +79,13 @@ src/
 │   ├── BudgetAlerts.tsx     # Banner for categories that are over or near their budget
 │   ├── RecurringPanel.tsx   # "Every month" card: allowance, rent, subscriptions
 │   ├── AdjustBalanceDialog.tsx # Remove / add an amount, or set the exact balance
+│   ├── AccountMenu.tsx      # "Sign in with Google", or the signed-in account's menu
 │   └── SpendingCharts.tsx   # Daily and per-category bar charts
 ├── hooks/
 │   ├── useTransactions.ts   # State + automatic saving to localStorage
 │   ├── useBudgets.ts        # Budgets + automatic saving to localStorage
-│   └── useRecurring.ts      # Recurring items + automatic saving to localStorage
+│   ├── useRecurring.ts      # Recurring items + automatic saving to localStorage
+│   └── useCloudSync.ts      # Keeps the data in step with the signed-in Google account
 └── lib/                     # Plain functions with unit tests
     ├── csv.ts               # CSV parsing, date/amount reading, column guessing, duplicate check
     ├── pdf.ts               # Reads a PDF with pdf.js and returns its text with positions
@@ -91,7 +95,11 @@ src/
     ├── dates.ts             # Local-date helpers
     ├── recurring.ts         # Works out which monthly items are due and adds them
     ├── stats.ts             # Totals, net, running balance, grouping, per-day and per-category sums, budget status
-    └── storage.ts           # Loading/saving with validation
+    ├── storage.ts           # Loading/saving with validation
+    ├── sync.ts              # Checking account data and merging a device into an account
+    ├── cloud.ts             # Firebase sign-in and Firestore reads/writes (loaded on demand)
+    └── firebaseConfig.ts    # The Firebase project's web settings (null = sign-in hidden)
+firestore.rules              # Who can read and write what in Firestore
 ```
 
 ## Design decisions
@@ -102,11 +110,24 @@ src/
 - **Imports show a preview and never drop rows silently.** Anything that can't be read is listed with the reason, and likely duplicates are unticked so re-importing an overlapping statement doesn't double-count.
 - **Logic lives in `src/lib`, separate from the UI.** Calculations are plain functions, which makes them easy to unit test.
 - **Monthly items are added once, at start-up.** Each one remembers the last month it was added for, and the app adds anything due before it shows any data, so a month is never added twice and deleting one doesn't bring it back.
-- **Saved data is validated when it's loaded.** Corrupted or hand-edited localStorage entries are skipped instead of crashing the app.
+- **Saved data is validated when it's loaded.** Corrupted or hand-edited localStorage entries are skipped instead of crashing the app. Data from a signed-in account goes through the same checks.
+- **Sign-in never loses data.** The first time a device signs in, its data is merged into the account. After that, the account's copy wins when the app opens, so something deleted on one device doesn't come back from another. Monthly items get an id made from the item and the month, so two devices adding the same month don't create a duplicate.
 
 ## Deployment
 
 Every push to `main` runs the lint, tests and build in GitHub Actions, then publishes the site to GitHub Pages. To turn it on for your own copy: **Settings → Pages → Source: GitHub Actions**.
+
+## Google sign-in setup
+
+Sign-in is optional and stays hidden until a Firebase project is connected. The free Spark plan is enough.
+
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com) (Google Analytics isn't needed).
+2. **Authentication → Get started → Sign-in method → Google → Enable**, pick a support email, and save.
+3. **Authentication → Settings → Authorized domains → Add domain:** your GitHub Pages domain (for example `ngjyekang11.github.io`). `localhost` is there already for development.
+4. **Firestore Database → Create database** (production mode, any nearby location), then open **Rules**, replace them with the contents of [`firestore.rules`](firestore.rules), and **Publish**.
+5. **Project settings → Your apps → Web (`</>`)**, register an app, and copy the `firebaseConfig` object into [`src/lib/firebaseConfig.ts`](src/lib/firebaseConfig.ts) in place of `null`.
+
+The config values aren't secrets: each person's data is protected by Google sign-in and the Firestore rules, which only let a signed-in person read and write their own document.
 
 ## Roadmap
 
@@ -115,6 +136,6 @@ Every push to `main` runs the lint, tests and build in GitHub Actions, then publ
 - [x] Import a bank statement from CSV
 - [ ] Export your data as CSV
 - [x] Import PDF statements (best-effort; scanned PDFs would need OCR)
-- [ ] Cloud sync and user accounts (e.g. with Supabase)
+- [x] Google sign-in with cloud sync (Firebase)
 - [x] Recurring transactions (allowance, rent, subscriptions)
 - [x] Adjust the balance for money moved outside the app
