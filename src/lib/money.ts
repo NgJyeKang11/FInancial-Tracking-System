@@ -11,6 +11,19 @@ export function parseAmountToCents(input: string): number | null {
   return cents > 0 && Number.isSafeInteger(cents) ? cents : null
 }
 
+/**
+ * Like `parseAmountToCents`, but for a balance, which can also be zero or negative
+ * ("-45.20" -> -4520, "0" -> 0).
+ */
+export function parseBalanceToCents(input: string): number | null {
+  const cleaned = input.trim()
+  const negative = cleaned.startsWith('-')
+  const digits = negative ? cleaned.slice(1) : cleaned
+  if (/^0*(\.0{1,2})?$/.test(digits.replace(/,/g, '')) && /\d/.test(digits)) return 0
+  const cents = parseAmountToCents(digits)
+  return cents === null ? null : negative ? -cents : cents
+}
+
 /** Formats cents as currency text, e.g. 123456 -> "$1,234.56". */
 export function formatCents(cents: number, currency: string): string {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(cents / 100)

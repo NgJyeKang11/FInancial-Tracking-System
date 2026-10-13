@@ -14,6 +14,8 @@ interface Props {
   currency: string
   /** Which numbers to show, in this order. */
   show: StatKey[]
+  /** When set, the Balance card gets an "Adjust" button. */
+  onAdjustBalance?: () => void
 }
 
 type Tone = 'positive' | 'negative'
@@ -21,7 +23,7 @@ type Tone = 'positive' | 'negative'
 /** Colours a signed amount: green when above zero, red when below, plain at zero. */
 const toneOf = (cents: number): Tone | undefined => (cents > 0 ? 'positive' : cents < 0 ? 'negative' : undefined)
 
-export function SummaryCards({ all, monthTransactions, month, currency, show }: Props) {
+export function SummaryCards({ all, monthTransactions, month, currency, show, onAdjustBalance }: Props) {
   const today = todayISO()
   const spent = totalCents(expensesOnly(monthTransactions))
   const income = totalCents(incomeOnly(monthTransactions))
@@ -51,7 +53,14 @@ export function SummaryCards({ all, monthTransactions, month, currency, show }: 
     <section className="summary" aria-label="Summary">
       {show.map((key) => (
         <div key={key} className="card stat">
-          <span className="stat-label">{cards[key].label}</span>
+          <span className="stat-label">
+            {cards[key].label}
+            {key === 'balance' && onAdjustBalance && (
+              <button type="button" className="link" onClick={onAdjustBalance}>
+                Adjust
+              </button>
+            )}
+          </span>
           <span className={cards[key].tone ? `stat-value ${cards[key].tone}` : 'stat-value'}>{cards[key].value}</span>
         </div>
       ))}

@@ -11,7 +11,7 @@ interface Props {
 
 const SHOWN = 5
 
-/** The last few transactions of the month, as a short read-only list. */
+/** The latest few transactions, from any month, as a short read-only list. */
 export function RecentTransactions({ transactions, currency, onSeeAll }: Props) {
   return (
     <section className="card recent" aria-labelledby="recent-title">
@@ -24,7 +24,7 @@ export function RecentTransactions({ transactions, currency, onSeeAll }: Props) 
         )}
       </header>
       {transactions.length === 0 ? (
-        <p className="muted">Nothing this month yet.</p>
+        <p className="muted">No transactions yet.</p>
       ) : (
         <ul>
           {transactions.slice(0, SHOWN).map((t) => (

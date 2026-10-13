@@ -1,7 +1,8 @@
-import { CATEGORIES, CATEGORIES_BY_TYPE, type Budgets, type Transaction } from '../types'
+import { CATEGORIES, CATEGORIES_BY_TYPE, type Budgets, type Recurring, type Transaction } from '../types'
 
 const TRANSACTIONS_KEY = 'fts.transactions.v1'
 const BUDGETS_KEY = 'fts.budgets.v1'
+const RECURRING_KEY = 'fts.recurring.v1'
 const CURRENCY_KEY = 'fts.currency'
 
 /**
@@ -73,6 +74,55 @@ export function loadBudgets(storage: Storage = localStorage): Budgets {
 export function saveBudgets(budgets: Budgets, storage: Storage = localStorage): void {
   try {
     storage.setItem(BUDGETS_KEY, JSON.stringify(budgets))
+  } catch {
+    // Same as transactions: keep working in memory if storage is full or disabled.
+  }
+}
+
+/** Checks one saved recurring item, or returns null if it's malformed. */
+function parseRecurring(value: unknown): Recurring | null {
+  if (typeof value !== 'object' || value === null) return null
+  const r = value as Record<string, unknown>
+  if (r.type !== 'expense' && r.type !== 'income') return null
+  if (
+    typeof r.id !== 'string' ||
+    !Number.isSafeInteger(r.amountCents) ||
+    (r.amountCents as number) <= 0 ||
+    !CATEGORIES_BY_TYPE[r.type].includes(r.category as never) ||
+    !Number.isInteger(r.day) ||
+    (r.day as number) < 1 ||
+    (r.day as number) > 31 ||
+    typeof r.note !== 'string' ||
+    typeof r.lastMonth !== 'string' ||
+    !/^\d{4}-\d{2}$/.test(r.lastMonth)
+  ) {
+    return null
+  }
+  return {
+    id: r.id,
+    type: r.type,
+    amountCents: r.amountCents as number,
+    category: r.category as Recurring['category'],
+    day: r.day as number,
+    note: r.note,
+    lastMonth: r.lastMonth,
+  }
+}
+
+/** Reads saved recurring items, skipping anything malformed. */
+export function loadRecurring(storage: Storage = localStorage): Recurring[] {
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(RECURRING_KEY) ?? '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((entry) => parseRecurring(entry) ?? [])
+  } catch {
+    return []
+  }
+}
+
+export function saveRecurring(items: Recurring[], storage: Storage = localStorage): void {
+  try {
+    storage.setItem(RECURRING_KEY, JSON.stringify(items))
   } catch {
     // Same as transactions: keep working in memory if storage is full or disabled.
   }
