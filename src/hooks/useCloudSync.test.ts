@@ -112,8 +112,14 @@ describe('useCloudSync', () => {
     await signIn(result)
     act(() => result.current.setData((d) => ({ ...d, transactions: [tx('new')] })))
     expect(result.current.sync.status).toBe('saving')
-    await waitFor(() => expect(ids(accountData())).toEqual(['new']), { timeout: 2000 })
-    expect(result.current.sync.status).toBe('saved')
+    // The pretend account stores the data a moment before the hook hears the save finished.
+    await waitFor(
+      () => {
+        expect(ids(accountData())).toEqual(['new'])
+        expect(result.current.sync.status).toBe('saved')
+      },
+      { timeout: 2000 },
+    )
   })
 
   it('shows changes saved on another device', async () => {

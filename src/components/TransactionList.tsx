@@ -10,9 +10,12 @@ interface Props {
   currency: string
   onEdit: (t: Transaction) => void
   onDelete: (t: Transaction) => void
+  /** When set, the list is in "select" mode: rows get tick boxes instead of Edit / Delete. */
+  selected?: Set<string>
+  onToggle?: (t: Transaction) => void
 }
 
-export function TransactionList({ transactions, balances, currency, onEdit, onDelete }: Props) {
+export function TransactionList({ transactions, balances, currency, onEdit, onDelete, selected, onToggle }: Props) {
   if (transactions.length === 0) {
     return (
       <div className="card empty">
@@ -43,7 +46,18 @@ export function TransactionList({ transactions, balances, currency, onEdit, onDe
             </header>
             <ul>
               {items.map((t) => (
-                <li key={t.id} className="row">
+                <li
+                  key={t.id}
+                  className={selected ? `row selectable${selected.has(t.id) ? ' is-selected' : ''}` : 'row'}
+                >
+                  {selected && (
+                    <input
+                      type="checkbox"
+                      checked={selected.has(t.id)}
+                      onChange={() => onToggle?.(t)}
+                      aria-label={`Select ${t.category} ${t.note} ${formatCents(t.amountCents, currency)}`}
+                    />
+                  )}
                   <div className="row-main">
                     <span className={t.type === 'income' ? 'chip income' : 'chip'}>{t.category}</span>
                     {t.note && <span className="note">{t.note}</span>}
@@ -52,19 +66,21 @@ export function TransactionList({ transactions, balances, currency, onEdit, onDe
                     {t.type === 'income' ? '+' : '−'}
                     {formatCents(t.amountCents, currency)}
                   </span>
-                  <div className="row-actions">
-                    <button type="button" onClick={() => onEdit(t)} aria-label={`Edit ${t.category} ${t.note}`}>
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => onDelete(t)}
-                      aria-label={`Delete ${t.category} ${t.note}`}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  {!selected && (
+                    <div className="row-actions">
+                      <button type="button" onClick={() => onEdit(t)} aria-label={`Edit ${t.category} ${t.note}`}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => onDelete(t)}
+                        aria-label={`Delete ${t.category} ${t.note}`}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

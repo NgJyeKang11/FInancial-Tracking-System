@@ -11,19 +11,22 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 ## Features
 
 - **Four simple pages:** Overview (balance, spending, income and recent transactions), Transactions, Budgets and Insights (charts), with a month switcher shared by all of them
-- **Add, edit and delete transactions** with an amount, category, date and an optional note, in a pop-up
+- **Add, edit and delete transactions** with an amount, category, date and an optional note, in a pop-up. Deleting happens straight away with an **Undo** bar instead of "Are you sure?"
+- **Change many at once:** on the Transactions page, tick several and move them to a category or delete them together
 - **Income and spending:** switch between Expense and Income when adding a transaction, each with its own categories
+- **Your own categories:** add spending or income categories (like "Pets" or "Allowance"); spending ones can have a budget
 - **Running balance:** every day shows its net amount and the balance at the end of that day
 - **Every month:** an allowance, salary, rent or subscription is added automatically on its day each month (on the last day in shorter months), catching up on any months the app wasn't opened
 - **Adjust balance:** remove or add an amount, or set the exact balance, for money that moved without being logged (like paying through another app). It's saved as an "Adjustment"
-- **Import a bank statement (CSV or PDF):** pick the file you downloaded from online banking and the app finds the date, description and amount columns, guesses a category for each row, skips ones you already added, and lets you review everything before saving. The file is read in your browser and never uploaded. PDF reading is best-effort (layouts vary between banks and scanned PDFs can't be read), so the preview asks you to check each row and lets you swap any row between money in and money out. There are sample statements to try: [CSV](public/sample-statement.csv) and [PDF](public/sample-statement.pdf)
+- **Import a bank statement (CSV or PDF):** pick the file you downloaded from online banking and the app finds the date, description and amount columns, guesses a category for each row, skips ones you already added, and lets you review everything before saving. The file is read in your browser and never uploaded. PDF reading is best-effort (layouts vary between banks and scanned PDFs can't be read), so the preview asks you to check each row and lets you swap any row between money in and money out. Categories you change in the preview are **remembered** for the same merchant or person next time. There are sample statements to try: [CSV](public/sample-statement.csv) and [PDF](public/sample-statement.pdf)
 - **Daily view:** transactions are grouped by day, newest first
 - **Monthly summary:** balance, income, spending, net, daily average, top category and savings rate
 - **Monthly budgets:** set a limit for each spending category and see a progress bar for the month, with a warning at 80% and when you go over
-- **Charts:** spending per day and spending by category (with hover tooltips)
+- **Charts:** spending per day and spending by category (with hover tooltips), plus a table comparing each category with last month
 - **Filters:** see all time or one month, filter by category, or search your notes
 - **Currency picker** (USD, EUR, MYR, SGD and more)
 - **Saves automatically** in your browser, so there's no account or server needed
+- **Backup and export:** download everything as a backup file and restore it later (or in another browser), or export transactions as CSV for a spreadsheet
 - **Optional Google sign-in:** sign in to keep your data in your Google account and use it on any device. Changes sync automatically, and signing out removes the data from that device (see [Google sign-in setup](#google-sign-in-setup))
 - **Light and dark mode** (follows your system setting) and a layout that works on phones
 
@@ -80,23 +83,31 @@ src/
 │   ├── RecurringPanel.tsx   # "Every month" card: allowance, rent, subscriptions
 │   ├── AdjustBalanceDialog.tsx # Remove / add an amount, or set the exact balance
 │   ├── AccountMenu.tsx      # "Sign in with Google", or the signed-in account's menu
+│   ├── CategoriesPanel.tsx  # "Your categories": add or remove your own
+│   ├── BulkBar.tsx          # Change the category of, or delete, several transactions
+│   ├── UndoToast.tsx        # The "Deleted … Undo" bar
+│   ├── MonthComparison.tsx  # Spending per category vs last month
+│   ├── DataMenu.tsx         # Download / restore a backup, export CSV
 │   └── SpendingCharts.tsx   # Daily and per-category bar charts
 ├── hooks/
 │   ├── useTransactions.ts   # State + automatic saving to localStorage
 │   ├── useBudgets.ts        # Budgets + automatic saving to localStorage
 │   ├── useRecurring.ts      # Recurring items + automatic saving to localStorage
+│   ├── useStoredState.ts    # State that's saved to localStorage whenever it changes
+│   ├── useCategories.ts     # Shares your own categories with every category picker
 │   └── useCloudSync.ts      # Keeps the data in step with the signed-in Google account
 └── lib/                     # Plain functions with unit tests
     ├── csv.ts               # CSV parsing, date/amount reading, column guessing, duplicate check
     ├── pdf.ts               # Reads a PDF with pdf.js and returns its text with positions
     ├── pdfRows.ts           # Rebuilds a transaction table from positioned PDF text
-    ├── categorize.ts        # Guesses a category from a statement description
+    ├── categorize.ts        # Guesses a category from a statement description, and remembers your picks
     ├── money.ts             # Parsing and formatting amounts
     ├── dates.ts             # Local-date helpers
     ├── recurring.ts         # Works out which monthly items are due and adds them
     ├── stats.ts             # Totals, net, running balance, grouping, per-day and per-category sums, budget status
     ├── storage.ts           # Loading/saving with validation
     ├── sync.ts              # Checking account data and merging a device into an account
+    ├── backup.ts            # Backup files and CSV export
     ├── cloud.ts             # Firebase sign-in and Firestore reads/writes (loaded on demand)
     └── firebaseConfig.ts    # The Firebase project's web settings (null = sign-in hidden)
 firestore.rules              # Who can read and write what in Firestore
@@ -134,7 +145,10 @@ The config values aren't secrets: each person's data is protected by Google sign
 - [x] Income tracking and a running balance
 - [x] Monthly budgets per category, with warnings when you go over
 - [x] Import a bank statement from CSV
-- [ ] Export your data as CSV
+- [x] Export your data as CSV, and back up / restore everything
+- [x] Your own categories, remembered import categories, undo, bulk edits and month-to-month comparison
+- [ ] Separate accounts (bank, e-wallet) with their own balances
+- [ ] Install on a phone as an app that works offline
 - [x] Import PDF statements (best-effort; scanned PDFs would need OCR)
 - [x] Google sign-in with cloud sync (Firebase)
 - [x] Recurring transactions (allowance, rent, subscriptions)

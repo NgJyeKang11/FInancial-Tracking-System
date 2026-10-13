@@ -1,3 +1,4 @@
+/** The built-in spending categories. People can add their own as well (see `CustomCategory`). */
 export const CATEGORIES = [
   'Food & Drink',
   'Groceries',
@@ -9,6 +10,7 @@ export const CATEGORIES = [
   'Other',
 ] as const
 
+/** The built-in income categories. */
 export const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investments', 'Gift', 'Other income'] as const
 
 /**
@@ -17,17 +19,33 @@ export const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investments', 'Gift', 
  */
 export const ADJUSTMENT = 'Adjustment'
 
-export type ExpenseCategory = (typeof CATEGORIES)[number]
-export type IncomeCategory = (typeof INCOME_CATEGORIES)[number]
-export type Category = ExpenseCategory | IncomeCategory | typeof ADJUSTMENT
+/** A category name: a built-in one, "Adjustment", or one the person added. */
+export type Category = string
 
 export type TransactionType = 'expense' | 'income'
 
-/** The category choices for each kind of transaction. */
-export const CATEGORIES_BY_TYPE: Record<TransactionType, readonly Category[]> = {
-  expense: [...CATEGORIES, ADJUSTMENT],
-  income: [...INCOME_CATEGORIES, ADJUSTMENT],
+/** A category the person added, for spending or for income. */
+export interface CustomCategory {
+  name: string
+  type: TransactionType
 }
+
+/** Longest category name allowed, so names fit in chips and menus. */
+export const MAX_CATEGORY_LENGTH = 30
+
+/** The category choices for a type: built-in ones, then the person's own, then Adjustment. */
+export function categoriesFor(type: TransactionType, custom: CustomCategory[]): Category[] {
+  const builtIn: readonly string[] = type === 'expense' ? CATEGORIES : INCOME_CATEGORIES
+  return [...builtIn, ...custom.filter((c) => c.type === type).map((c) => c.name), ADJUSTMENT]
+}
+
+/** The spending categories that can have a budget (everything except Adjustment). */
+export function budgetCategories(custom: CustomCategory[]): Category[] {
+  return categoriesFor('expense', custom).filter((c) => c !== ADJUSTMENT)
+}
+
+/** The category a type falls back to when nothing else fits. */
+export const fallbackCategory = (type: TransactionType): Category => (type === 'expense' ? 'Other' : 'Other income')
 
 export interface Transaction {
   id: string
@@ -57,16 +75,24 @@ export interface Recurring {
   lastMonth: string
 }
 
+/**
+ * Monthly spending limits in cents, keyed by spending category. A category with no entry has
+ * no budget. The same limits apply to every month.
+ */
+export type Budgets = Record<Category, number>
+
+/**
+ * Categories the person picked for statement descriptions during an import, so the same
+ * merchant or person gets that category next time. Keyed by `categoryRuleKey`.
+ */
+export type CategoryRules = Record<string, Category>
+
 /** Everything the app saves, as one bundle (what's stored in a signed-in account). */
 export interface AppData {
   transactions: Transaction[]
   budgets: Budgets
   recurring: Recurring[]
   currency: string
+  customCategories: CustomCategory[]
+  categoryRules: CategoryRules
 }
-
-/**
- * Monthly spending limits in cents, one per expense category. A category with no entry has
- * no budget. The same limits apply to every month.
- */
-export type Budgets = Partial<Record<ExpenseCategory, number>>

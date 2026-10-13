@@ -2,12 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { monthOf, todayISO } from '../lib/dates'
 import { formatCents, parseAmountToCents } from '../lib/money'
 import { occurrenceDate } from '../lib/recurring'
-import {
-  CATEGORIES_BY_TYPE,
-  type Category,
-  type Recurring,
-  type TransactionType,
-} from '../types'
+import { useCustomCategories } from '../hooks/useCategories'
+import { categoriesFor, type Category, type Recurring, type TransactionType } from '../types'
 
 /** What the form collects; `id` and `lastMonth` are filled in when it's saved. */
 export type RecurringDraft = Omit<Recurring, 'id' | 'lastMonth'>
@@ -28,6 +24,7 @@ function ordinal(n: number): string {
 }
 
 function RecurringForm({ onAdd, onCancel }: { onAdd: Props['onAdd']; onCancel: () => void }) {
+  const custom = useCustomCategories()
   const [type, setType] = useState<TransactionType>('income')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Category>('Gift')
@@ -44,7 +41,7 @@ function RecurringForm({ onAdd, onCancel }: { onAdd: Props['onAdd']; onCancel: (
   const changeType = (next: TransactionType) => {
     if (next === type) return
     setType(next)
-    setCategory(next === 'income' ? 'Gift' : CATEGORIES_BY_TYPE.expense[0])
+    setCategory(next === 'income' ? 'Gift' : categoriesFor('expense', custom)[0])
   }
 
   const handleSubmit = (e: FormEvent) => {
@@ -105,7 +102,7 @@ function RecurringForm({ onAdd, onCancel }: { onAdd: Props['onAdd']; onCancel: (
       <label>
         Category
         <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-          {CATEGORIES_BY_TYPE[type].map((c) => (
+          {categoriesFor(type, custom).map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>

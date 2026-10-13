@@ -1,13 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { centsToInput, parseAmountToCents } from '../lib/money'
 import { todayISO } from '../lib/dates'
-import {
-  CATEGORIES_BY_TYPE,
-  type Category,
-  type Transaction,
-  type TransactionInput,
-  type TransactionType,
-} from '../types'
+import { useCustomCategories } from '../hooks/useCategories'
+import { categoriesFor, type Category, type Transaction, type TransactionInput, type TransactionType } from '../types'
 
 interface Props {
   /** When set, the form edits this transaction instead of adding a new one. */
@@ -17,9 +12,13 @@ interface Props {
 }
 
 export function TransactionForm({ editing, onSubmit, onCancel }: Props) {
+  const custom = useCustomCategories()
   const [type, setType] = useState<TransactionType>(editing?.type ?? 'expense')
   const [amount, setAmount] = useState(editing ? centsToInput(editing.amountCents) : '')
-  const [category, setCategory] = useState<Category>(editing?.category ?? CATEGORIES_BY_TYPE.expense[0])
+  const [category, setCategory] = useState<Category>(editing?.category ?? categoriesFor('expense', custom)[0])
+  const choices = categoriesFor(type, custom)
+  // A transaction can keep a category that has since been removed; still show it.
+  const options = choices.includes(category) ? choices : [category, ...choices]
   const [date, setDate] = useState(editing?.date ?? todayISO())
   const [note, setNote] = useState(editing?.note ?? '')
   const [error, setError] = useState('')
@@ -28,7 +27,7 @@ export function TransactionForm({ editing, onSubmit, onCancel }: Props) {
     if (next === type) return
     setType(next)
     // Each type has its own categories, so start from the first one.
-    setCategory(CATEGORIES_BY_TYPE[next][0])
+    setCategory(categoriesFor(next, custom)[0])
   }
 
   const handleSubmit = (e: FormEvent) => {
@@ -79,7 +78,7 @@ export function TransactionForm({ editing, onSubmit, onCancel }: Props) {
       <label>
         Category
         <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-          {CATEGORIES_BY_TYPE[type].map((c) => (
+          {options.map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>
