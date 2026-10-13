@@ -1,4 +1,4 @@
-import { CATEGORIES, type Budgets, type Category, type ExpenseCategory, type Transaction } from '../types'
+import { CATEGORIES, type Budgets, type Category, type Transaction } from '../types'
 import { daysInMonth, monthOf } from './dates'
 
 /** Plain sum of the amounts. Filter to one type first (see `expensesOnly` / `incomeOnly`). */
@@ -66,7 +66,7 @@ export const NEAR_BUDGET_RATIO = 0.8
 export type BudgetState = 'ok' | 'near' | 'over'
 
 export interface BudgetStatus {
-  category: ExpenseCategory
+  category: Category
   budgetCents: number
   spentCents: number
   /** Budget minus spending; negative once the budget is exceeded. */
@@ -78,25 +78,54 @@ export interface BudgetStatus {
 
 /**
  * How each budgeted category is doing, for the transactions passed in (normally one month).
- * Categories without a budget are left out; the result follows the order of CATEGORIES.
+ * Categories without a budget are left out. The result follows `order` (normally the category
+ * list), with any budgeted category not in it at the end.
  */
-export function budgetStatuses(transactions: Transaction[], budgets: Budgets): BudgetStatus[] {
+export function budgetStatuses(
+  transactions: Transaction[],
+  budgets: Budgets,
+  order: readonly Category[] = CATEGORIES,
+): BudgetStatus[] {
   const spent = spentByCategory(transactions)
-  return CATEGORIES.flatMap((category) => {
+  const position = (c: Category) => (order.includes(c) ? order.indexOf(c) : order.length)
+  return Object.keys(budgets)
+    .sort((a, b) => position(a) - position(b))
+    .map((category) => {
     const budgetCents = budgets[category]
-    if (budgetCents === undefined) return []
     const spentCents = spent.get(category) ?? 0
-    return [
-      {
-        category,
-        budgetCents,
-        spentCents,
-        remainingCents: budgetCents - spentCents,
-        ratio: spentCents / budgetCents,
-        state: budgetState(spentCents, budgetCents),
-      },
-    ]
+    return {
+      category,
+      budgetCents,
+      spentCents,
+      remainingCents: budgetCents - spentCents,
+      ratio: spentCents / budgetCents,
+      state: budgetState(spentCents, budgetCents),
+    }
   })
+}
+
+export interface CategoryChange {
+  category: Category
+  thisCents: number
+  lastCents: number
+  /** This month minus last month; positive means more was spent. */
+  changeCents: number
+}
+
+/**
+ * Spending per category in two months side by side, for every category with spending in
+ * either. Biggest spending this month first; categories only spent on last month come last.
+ */
+export function compareMonths(thisMonth: Transaction[], lastMonth: Transaction[]): CategoryChange[] {
+  const now = spentByCategory(thisMonth)
+  const before = spentByCategory(lastMonth)
+  return [...new Set([...now.keys(), ...before.keys()])]
+    .map((category) => {
+      const thisCents = now.get(category) ?? 0
+      const lastCents = before.get(category) ?? 0
+      return { category, thisCents, lastCents, changeCents: thisCents - lastCents }
+    })
+    .sort((a, b) => b.thisCents - a.thisCents || b.lastCents - a.lastCents)
 }
 
 /** Total spending per category (expenses only). Categories with no spending have no entry. */

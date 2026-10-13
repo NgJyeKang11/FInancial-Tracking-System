@@ -9,16 +9,33 @@ import {
   type ColumnMap,
   type DateOrder,
 } from '../lib/csv'
-import { categorize } from '../lib/categorize'
+import { useCustomCategories } from '../hooks/useCategories'
+import { categorize, categoryRuleKey } from '../lib/categorize'
 import { formatDayHeading } from '../lib/dates'
 import { formatCents } from '../lib/money'
 import { describePdfProblem, PdfImportError, readPdfStatement } from '../lib/pdf'
-import { CATEGORIES_BY_TYPE, type Category, type Transaction, type TransactionInput } from '../types'
+import {
+  categoriesFor,
+  type Category,
+  type CategoryRules,
+  type Transaction,
+  type TransactionInput,
+  type TransactionType,
+} from '../types'
+
+/** A category the person chose by hand in the preview, so it can be remembered. */
+export interface CategoryPick {
+  description: string
+  type: TransactionType
+  category: Category
+}
 
 interface Props {
   existing: Transaction[]
   currency: string
-  onImport: (inputs: TransactionInput[]) => void
+  /** Categories picked in earlier imports. */
+  remembered: CategoryRules
+  onImport: (inputs: TransactionInput[], picks: CategoryPick[]) => void
   onClose: () => void
 }
 
@@ -34,7 +51,8 @@ const MAX_CSV_BYTES = 5 * 1024 * 1024
 const MAX_PDF_BYTES = 20 * 1024 * 1024
 
 /** A pop-up for importing a bank statement from a CSV or PDF file, with a preview before anything is saved. */
-export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
+export function ImportDialog({ existing, currency, remembered, onImport, onClose }: Props) {
+  const custom = useCustomCategories()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [fileName, setFileName] = useState('')
   const [fromPdf, setFromPdf] = useState(false)
@@ -62,8 +80,8 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
   const dataRows = useMemo(() => (hasHeader ? table.slice(1) : table), [table, hasHeader])
 
   const parsed = useMemo(
-    () => rowsToTransactions(dataRows, { columns, dateOrder, flipSigns }, hasHeader ? 2 : 1),
-    [dataRows, columns, dateOrder, flipSigns, hasHeader],
+    () => rowsToTransactions(dataRows, { columns, dateOrder, flipSigns, remembered }, hasHeader ? 2 : 1),
+    [dataRows, columns, dateOrder, flipSigns, hasHeader, remembered],
   )
 
   const duplicates = useMemo(() => {
@@ -78,20 +96,32 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
   /** The category the user picked for a row, if it still fits the row's type; otherwise the guess. */
   const chosenCategory = (index: number, input: TransactionInput): Category => {
     const picked = edits[index]?.category
-    return picked !== undefined && CATEGORIES_BY_TYPE[input.type].includes(picked) ? picked : input.category
+    return picked !== undefined && categoriesFor(input.type, custom).includes(picked) ? picked : input.category
   }
 
   /** The row as read, or swapped between money in and out if the user did that. */
   const effective = (index: number, input: TransactionInput): TransactionInput => {
     if (!edits[index]?.flip) return input
     const type = input.type === 'income' ? 'expense' : 'income'
-    return { ...input, type, category: categorize(input.note, type) }
+    return { ...input, type, category: categorize(input.note, type, remembered) }
+  }
+
+  /** True when a row's category came from an earlier import rather than a guess. */
+  const isRemembered = (input: TransactionInput) => {
+    const key = categoryRuleKey(input.note, input.type)
+    return key !== null && remembered[key] === input.category
   }
 
   const toImport = parsed.flatMap((r, i) => {
     if (!r.ok || !isIncluded(i)) return []
     const input = effective(i, r.input)
     return [{ ...input, category: chosenCategory(i, input) }]
+  })
+  // Categories changed by hand on rows being imported, to remember for next time.
+  const picks: CategoryPick[] = parsed.flatMap((r, i) => {
+    if (!r.ok || !isIncluded(i) || edits[i]?.category === undefined) return []
+    const input = effective(i, r.input)
+    return [{ description: input.note, type: input.type, category: chosenCategory(i, input) }]
   })
   const unreadable = parsed.filter((r) => !r.ok)
   const skippedDuplicates = duplicates.filter(Boolean).length
@@ -284,6 +314,8 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
                     )
                   }
                   const input = effective(i, r.input)
+                  const chosen = chosenCategory(i, input)
+                  const choices = categoriesFor(input.type, custom)
                   return (
                     <tr key={i} className={isIncluded(i) ? undefined : 'skipped'}>
                       <td>
@@ -302,13 +334,18 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
                       <td>
                         <select
                           aria-label={`Category for row ${r.line}`}
-                          value={chosenCategory(i, input)}
-                          onChange={(e) => setEdit(i, { category: e.target.value as Category })}
+                          value={chosen}
+                          onChange={(e) => setEdit(i, { category: e.target.value })}
                         >
-                          {CATEGORIES_BY_TYPE[input.type].map((c) => (
+                          {(choices.includes(chosen) ? choices : [chosen, ...choices]).map((c) => (
                             <option key={c}>{c}</option>
                           ))}
                         </select>
+                        {edits[i]?.category === undefined && isRemembered(input) && (
+                          <span className="chip dup" title="You picked this category for the same description before">
+                            Remembered
+                          </span>
+                        )}
                       </td>
                       <td className={input.type === 'income' ? 'num positive' : 'num'}>
                         {input.type === 'income' ? '+' : '−'}
@@ -341,7 +378,7 @@ export function ImportDialog({ existing, currency, onImport, onClose }: Props) {
           className="primary"
           disabled={!canImport}
           onClick={() => {
-            onImport(toImport)
+            onImport(toImport, picks)
             close()
           }}
         >

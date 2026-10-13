@@ -1,10 +1,27 @@
-import { CATEGORIES, CATEGORIES_BY_TYPE, type Budgets, type Recurring, type Transaction } from '../types'
+import {
+  ADJUSTMENT,
+  MAX_CATEGORY_LENGTH,
+  type Budgets,
+  type CategoryRules,
+  type CustomCategory,
+  type Recurring,
+  type Transaction,
+} from '../types'
 
 const TRANSACTIONS_KEY = 'fts.transactions.v1'
 const BUDGETS_KEY = 'fts.budgets.v1'
 const RECURRING_KEY = 'fts.recurring.v1'
+const CATEGORIES_KEY = 'fts.categories.v1'
+const CATEGORY_RULES_KEY = 'fts.categoryRules.v1'
 const CURRENCY_KEY = 'fts.currency'
 const SYNCED_USER_KEY = 'fts.syncedUser'
+
+/**
+ * True for a usable category name. Any name is accepted (people can add their own), as long
+ * as it isn't blank and isn't absurdly long.
+ */
+export const isCategoryName = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 60
 
 /**
  * Checks one saved entry and returns it as a Transaction, or null if it's malformed.
@@ -19,7 +36,7 @@ export function parseTransaction(value: unknown): Transaction | null {
     typeof t.id !== 'string' ||
     !Number.isSafeInteger(t.amountCents) ||
     (t.amountCents as number) <= 0 ||
-    !CATEGORIES_BY_TYPE[type].includes(t.category as never) ||
+    !isCategoryName(t.category) ||
     typeof t.date !== 'string' ||
     !/^\d{4}-\d{2}-\d{2}$/.test(t.date) ||
     typeof t.note !== 'string'
@@ -30,7 +47,7 @@ export function parseTransaction(value: unknown): Transaction | null {
     id: t.id,
     type,
     amountCents: t.amountCents as number,
-    category: t.category as Transaction['category'],
+    category: t.category,
     date: t.date,
     note: t.note,
   }
@@ -55,14 +72,14 @@ export function saveTransactions(transactions: Transaction[], storage: Storage =
   }
 }
 
-/** Checks saved budgets, keeping only valid expense categories with a positive whole-cent limit. */
+/** Checks saved budgets, keeping only category names with a positive whole-cent limit. */
 export function parseBudgets(value: unknown): Budgets {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
-  const saved = value as Record<string, unknown>
   const budgets: Budgets = {}
-  for (const category of CATEGORIES) {
-    const cents = saved[category]
-    if (Number.isSafeInteger(cents) && (cents as number) > 0) budgets[category] = cents as number
+  for (const [category, cents] of Object.entries(value)) {
+    if (isCategoryName(category) && category !== ADJUSTMENT && Number.isSafeInteger(cents) && cents > 0) {
+      budgets[category] = cents
+    }
   }
   return budgets
 }
@@ -92,7 +109,7 @@ export function parseRecurring(value: unknown): Recurring | null {
     typeof r.id !== 'string' ||
     !Number.isSafeInteger(r.amountCents) ||
     (r.amountCents as number) <= 0 ||
-    !CATEGORIES_BY_TYPE[r.type].includes(r.category as never) ||
+    !isCategoryName(r.category) ||
     !Number.isInteger(r.day) ||
     (r.day as number) < 1 ||
     (r.day as number) > 31 ||
@@ -106,7 +123,7 @@ export function parseRecurring(value: unknown): Recurring | null {
     id: r.id,
     type: r.type,
     amountCents: r.amountCents as number,
-    category: r.category as Recurring['category'],
+    category: r.category,
     day: r.day as number,
     note: r.note,
     lastMonth: r.lastMonth,
@@ -131,6 +148,59 @@ export function saveRecurring(items: Recurring[], storage: Storage = localStorag
     // Same as transactions: keep working in memory if storage is full or disabled.
   }
 }
+
+/** Checks saved custom categories: valid, not too long, and no name used twice. */
+export function parseCustomCategories(value: unknown): CustomCategory[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  return value.flatMap((entry): CustomCategory[] => {
+    if (typeof entry !== 'object' || entry === null) return []
+    const { name, type } = entry as Record<string, unknown>
+    if (!isCategoryName(name) || name.length > MAX_CATEGORY_LENGTH || (type !== 'expense' && type !== 'income')) {
+      return []
+    }
+    if (seen.has(name.toLowerCase())) return []
+    seen.add(name.toLowerCase())
+    return [{ name, type }]
+  })
+}
+
+/** Checks saved category rules: text keys mapping to category names. */
+export function parseCategoryRules(value: unknown): CategoryRules {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const rules: CategoryRules = {}
+  for (const [key, category] of Object.entries(value)) {
+    if (key.length > 0 && key.length <= 300 && isCategoryName(category)) rules[key] = category
+  }
+  return rules
+}
+
+/** Reads one saved JSON value with its checker, falling back to `fallback` if it's missing or broken. */
+function loadChecked<T>(key: string, parse: (value: unknown) => T, fallback: string, storage: Storage): T {
+  try {
+    return parse(JSON.parse(storage.getItem(key) ?? fallback))
+  } catch {
+    return parse(JSON.parse(fallback))
+  }
+}
+
+function saveJson(key: string, value: unknown, storage: Storage): void {
+  try {
+    storage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Same as transactions: keep working in memory if storage is full or disabled.
+  }
+}
+
+export const loadCustomCategories = (storage: Storage = localStorage) =>
+  loadChecked(CATEGORIES_KEY, parseCustomCategories, '[]', storage)
+export const saveCustomCategories = (categories: CustomCategory[], storage: Storage = localStorage) =>
+  saveJson(CATEGORIES_KEY, categories, storage)
+
+export const loadCategoryRules = (storage: Storage = localStorage) =>
+  loadChecked(CATEGORY_RULES_KEY, parseCategoryRules, '{}', storage)
+export const saveCategoryRules = (rules: CategoryRules, storage: Storage = localStorage) =>
+  saveJson(CATEGORY_RULES_KEY, rules, storage)
 
 export function loadCurrency(storage: Storage = localStorage): string | null {
   try {

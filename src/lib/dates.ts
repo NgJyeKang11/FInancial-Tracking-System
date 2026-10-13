@@ -40,6 +40,11 @@ export function formatDayHeading(date: string): string {
   })
 }
 
+/** "2026-09" -> "September" (in the user's locale). */
+export function formatMonthName(month: string): string {
+  return toLocalDate(`${month}-01`).toLocaleDateString(undefined, { month: 'long' })
+}
+
 /** "2026-10" -> "October 2026" (in the user's locale). */
 export function formatMonth(month: string): string {
   return toLocalDate(`${month}-01`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
