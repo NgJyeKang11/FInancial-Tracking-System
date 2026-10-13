@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { formatCents } from '../lib/money'
 import { daysInMonth, monthOf, todayISO } from '../lib/dates'
 import { balanceAsOf, expensesOnly, incomeOnly, netCents, totalCents, totalsByCategory } from '../lib/stats'
@@ -31,10 +32,14 @@ export function SummaryCards({ all, monthTransactions, month, currency, show, on
 
   // Balance as of the end of the selected month, or as of today for the current month.
   const monthEnd = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`
-  const balance = balanceAsOf(all, monthOf(today) === month ? today : monthEnd)
+  const isCurrentMonth = monthOf(today) === month
+  const balance = balanceAsOf(all, isCurrentMonth ? today : monthEnd)
+  // Transactions dated after today aren't in today's balance; say so rather than look wrong.
+  const later = all.filter((t) => t.date > today)
+  const laterNet = netCents(later)
 
   // For the current month, average over the days elapsed so far; otherwise the whole month.
-  const daysCounted = monthOf(today) === month ? Number(today.slice(8, 10)) : daysInMonth(month)
+  const daysCounted = isCurrentMonth ? Number(today.slice(8, 10)) : daysInMonth(month)
   const dailyAverage = Math.round(spent / daysCounted)
   const top = totalsByCategory(monthTransactions)[0]
   const savingsRate = income > 0 ? `${Math.round((net / income) * 100)}%` : '—'
@@ -61,7 +66,21 @@ export function SummaryCards({ all, monthTransactions, month, currency, show, on
               </button>
             )}
           </span>
-          <span className={cards[key].tone ? `stat-value ${cards[key].tone}` : 'stat-value'}>{cards[key].value}</span>
+          <span
+            className={cards[key].tone ? `stat-value ${cards[key].tone}` : 'stat-value'}
+            style={{ '--chars': cards[key].value.length } as CSSProperties}
+          >
+            {cards[key].value}
+          </span>
+          {key === 'balance' && isCurrentMonth && later.length > 0 && (
+            <span className="stat-note">
+              {laterNet !== 0
+                ? `${laterNet > 0 ? '+' : '−'}${formatCents(Math.abs(laterNet), currency)} dated after today isn't counted yet`
+                : later.length === 1
+                  ? "1 transaction dated after today isn't counted yet"
+                  : `${later.length} transactions dated after today aren't counted yet`}
+            </span>
+          )}
         </div>
       ))}
     </section>

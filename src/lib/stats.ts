@@ -47,6 +47,20 @@ export function balanceAsOf(transactions: Transaction[], date: string): number {
   return netCents(transactions.filter((t) => t.date <= date))
 }
 
+/**
+ * Category totals (largest first) cut down to at most `max` slices for a pie chart: when there
+ * are more, the smallest ones are combined into a final "Everything else" slice.
+ */
+export function pieSlices(
+  totals: { category: Category; cents: number }[],
+  max = 6,
+): { category: Category; cents: number }[] {
+  if (totals.length <= max) return totals
+  const kept = totals.slice(0, max - 1)
+  const rest = totals.slice(max - 1).reduce((sum, t) => sum + t.cents, 0)
+  return [...kept, { category: 'Everything else', cents: rest }]
+}
+
 /** Spending per category, largest first. Categories with no spending are left out. */
 export function totalsByCategory(
   transactions: Transaction[],

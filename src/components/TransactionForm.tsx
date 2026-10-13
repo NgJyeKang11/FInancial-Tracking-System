@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { centsToInput, parseAmountToCents } from '../lib/money'
+import { amountError, centsToInput, parseAmountToCents } from '../lib/money'
 import { todayISO } from '../lib/dates'
 import { useCustomCategories } from '../hooks/useCategories'
 import { categoriesFor, type Category, type Transaction, type TransactionInput, type TransactionType } from '../types'
@@ -34,11 +34,17 @@ export function TransactionForm({ editing, onSubmit, onCancel }: Props) {
     e.preventDefault()
     const amountCents = parseAmountToCents(amount)
     if (amountCents === null) {
-      setError('Enter an amount greater than 0, with up to 2 decimal places.')
+      setError(amountError(amount) ?? '')
       return
     }
     if (!date) {
       setError('Pick a date.')
+      return
+    }
+    // The balance only counts transactions up to today, so a future one would look missing.
+    // (The date picker's max isn't enforced because the form uses noValidate.)
+    if (date > todayISO()) {
+      setError("Pick today or an earlier date. For money that comes every month, use Budgets → Every month.")
       return
     }
     onSubmit({ type, amountCents, category, date, note: note.trim() })

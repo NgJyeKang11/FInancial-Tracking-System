@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { APP_VERSION } from './version'
 import { AccountMenu } from './components/AccountMenu'
 import { AdjustBalanceDialog } from './components/AdjustBalanceDialog'
 import { BudgetAlerts } from './components/BudgetAlerts'
@@ -81,7 +82,10 @@ function App() {
   const [allTime, setAllTime] = useState(true)
   /** The add / edit pop-up: 'new' to add, a transaction to edit, null when closed. */
   const [form, setForm] = useState<Transaction | 'new' | null>(null)
-  const [month, setMonth] = useState(monthOf(todayISO()))
+  const [pickedMonth, setMonth] = useState(monthOf(todayISO()))
+  // Months after this one can't be viewed; the next month opens up once it arrives.
+  const currentMonth = monthOf(todayISO())
+  const month = pickedMonth > currentMonth ? currentMonth : pickedMonth
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All')
   const [search, setSearch] = useState('')
   const [currency, setCurrency] = useState(() => loadCurrency() ?? 'USD')
@@ -304,7 +308,7 @@ function App() {
       <div className="app">
         <header className="app-header">
           <h1>
-            Telemachus <span className="byline">by JK</span>
+            Telemachus <span className="byline">by JK</span> <span className="version">v{APP_VERSION}</span>
           </h1>
           <div className="header-actions">
             <button type="button" onClick={() => setImporting(true)}>
@@ -343,7 +347,7 @@ function App() {
               </button>
             ))}
           </nav>
-          {!(tab === 'transactions' && allTime) && tab !== 'settings' && <MonthPicker month={month} onChange={setMonth} />}
+          {!(tab === 'transactions' && allTime) && tab !== 'settings' && <MonthPicker month={month} max={currentMonth} onChange={setMonth} />}
         </div>
 
         <main className="page">

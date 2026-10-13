@@ -13,6 +13,7 @@ import {
   incomeOnly,
   inMonth,
   netCents,
+  pieSlices,
   spentByCategory,
   totalCents,
   totalsByCategory,
@@ -199,5 +200,21 @@ describe('dates', () => {
 
   it('uses the local date', () => {
     expect(todayISO(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+})
+
+describe('pieSlices', () => {
+  const totals = (n: number) => Array.from({ length: n }, (_, i) => ({ category: `C${i}`, cents: (n - i) * 100 }))
+
+  it('keeps up to six categories as they are', () => {
+    expect(pieSlices(totals(6))).toEqual(totals(6))
+  })
+
+  it('combines the smallest into "Everything else" when there are more', () => {
+    const slices = pieSlices(totals(8))
+    expect(slices).toHaveLength(6)
+    expect(slices.slice(0, 5)).toEqual(totals(8).slice(0, 5))
+    // C5 (300) + C6 (200) + C7 (100)
+    expect(slices[5]).toEqual({ category: 'Everything else', cents: 600 })
   })
 })

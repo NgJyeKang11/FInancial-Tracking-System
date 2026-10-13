@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { centsToInput, formatCents, parseAmountToCents } from '../lib/money'
+import { amountError, centsToInput, formatCents, parseAmountToCents } from '../lib/money'
 import { budgetState, spentByCategory } from '../lib/stats'
 import { useCustomCategories } from '../hooks/useCategories'
 import { budgetCategories, type Budgets, type Category, type Transaction } from '../types'
@@ -22,21 +22,21 @@ interface RowProps {
 
 function BudgetRow({ category, budgetCents, spentCents, currency, onChange }: RowProps) {
   const [text, setText] = useState(budgetCents === undefined ? '' : centsToInput(budgetCents))
-  const [error, setError] = useState(false)
+  const [error, setError] = useState('')
 
   const commit = () => {
     const trimmed = text.trim()
     if (trimmed === '') {
-      setError(false)
+      setError('')
       onChange(null)
       return
     }
     const cents = parseAmountToCents(trimmed)
     if (cents === null) {
-      setError(true)
+      setError(amountError(trimmed) ?? '')
       return
     }
-    setError(false)
+    setError('')
     setText(centsToInput(cents))
     onChange(cents)
   }
@@ -58,14 +58,14 @@ function BudgetRow({ category, budgetCents, spentCents, currency, onChange }: Ro
           inputMode="decimal"
           placeholder="No limit"
           value={text}
-          aria-invalid={error}
+          aria-invalid={error !== ''}
           onChange={(e) => setText(e.target.value)}
           onBlur={commit}
         />
       </form>
       {error && (
         <p className="error" role="alert">
-          Enter an amount greater than 0, or leave it empty for no limit.
+          {error} Leave it empty for no limit.
         </p>
       )}
       {budgetCents !== undefined && (

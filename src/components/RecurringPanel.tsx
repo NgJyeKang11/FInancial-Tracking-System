@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { monthOf, todayISO } from '../lib/dates'
-import { formatCents, parseAmountToCents } from '../lib/money'
+import { amountError, formatCents, parseAmountToCents } from '../lib/money'
 import { occurrenceDate } from '../lib/recurring'
 import { useCustomCategories } from '../hooks/useCategories'
 import { categoriesFor, type Category, type Recurring, type TransactionType } from '../types'
@@ -48,7 +48,7 @@ function RecurringForm({ onAdd, onCancel }: { onAdd: Props['onAdd']; onCancel: (
     e.preventDefault()
     const amountCents = parseAmountToCents(amount)
     if (amountCents === null) {
-      setError('Enter an amount greater than 0, with up to 2 decimal places.')
+      setError(amountError(amount) ?? '')
       return
     }
     if (!validDay) {
