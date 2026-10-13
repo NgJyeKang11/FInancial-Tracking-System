@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { centsToInput, parseAmountToCents, parseBalanceToCents } from './money'
+import { MAX_AMOUNT_CENTS, amountError, centsToInput, parseAmountToCents, parseBalanceToCents } from './money'
 
 describe('parseAmountToCents', () => {
   it('parses whole and decimal amounts', () => {
@@ -17,6 +17,28 @@ describe('parseAmountToCents', () => {
   it('rejects invalid amounts', () => {
     for (const bad of ['', 'abc', '-5', '0', '0.00', '1.234', '1e5', '.5']) {
       expect(parseAmountToCents(bad)).toBeNull()
+    }
+  })
+
+  it('caps amounts at 999,999,999.99', () => {
+    expect(parseAmountToCents('999,999,999.99')).toBe(MAX_AMOUNT_CENTS)
+    expect(parseAmountToCents('1000000000')).toBeNull()
+    expect(parseAmountToCents('1'.padEnd(45, '0'))).toBeNull()
+  })
+})
+
+describe('amountError', () => {
+  it('is null for a usable amount', () => {
+    expect(amountError('12.50')).toBeNull()
+  })
+
+  it('says when an amount is too large', () => {
+    expect(amountError('1'.padEnd(45, '0'))).toMatch(/too large/)
+  })
+
+  it('asks for a valid amount otherwise', () => {
+    for (const bad of ['', 'abc', '0', '1.234']) {
+      expect(amountError(bad)).toMatch(/greater than 0/)
     }
   })
 })

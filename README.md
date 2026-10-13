@@ -25,7 +25,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 - **Daily view:** transactions are grouped by day, newest first
 - **Monthly summary:** balance, income, spending, net, daily average, top category and savings rate
 - **Monthly budgets:** set a limit for each spending category and see a progress bar for the month, with a warning at 80% and when you go over
-- **Charts:** spending per day and spending by category (with hover tooltips), plus a table comparing each category with last month
+- **Charts:** spending per day (bars) and a pie of spending by category with each one's amount and share (the biggest five, then "Everything else"), plus a table comparing each category with last month
 - **Filters:** see all time or one month, filter by category, or search your notes
 - **Currencies with conversion** (USD, EUR, MYR, SGD and more): changing currency either converts every amount at the European Central Bank's daily reference rate (fetched at most twice a day, with built-in rates as a fallback) or just changes the label when the numbers were already in that currency. Both can be undone
 - **Saves automatically** in your browser, so there's no account or server needed
@@ -95,7 +95,7 @@ src/
 │   ├── DataMenu.tsx         # Download / restore a backup, export CSV
 │   ├── ResetDialog.tsx      # The "Reset everything?" warning, unlocked by typing RESET
 │   ├── CurrencyDialog.tsx   # "Convert my amounts" or "just change the label"
-│   └── SpendingCharts.tsx   # Daily and per-category bar charts
+│   └── SpendingCharts.tsx   # Spending per day (bars) and by category (pie)
 ├── hooks/
 │   ├── useTransactions.ts   # State + automatic saving to localStorage
 │   ├── useBudgets.ts        # Budgets + automatic saving to localStorage

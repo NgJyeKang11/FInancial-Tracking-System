@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { todayISO } from '../lib/dates'
-import { formatCents, parseAmountToCents, parseBalanceToCents } from '../lib/money'
+import { MAX_AMOUNT_CENTS, amountError, formatCents, parseAmountToCents, parseBalanceToCents } from '../lib/money'
 import { ADJUSTMENT, type TransactionInput } from '../types'
 
 interface Props {
@@ -54,7 +54,11 @@ export function AdjustBalanceDialog({ balanceCents, currency, onSave, onClose }:
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (change === null) {
-      setError(mode === 'set' ? 'Enter your actual balance, e.g. 1,250.00 or -20.00.' : 'Enter an amount greater than 0.')
+      setError(mode === 'set' ? 'Enter your actual balance, e.g. 1,250.00 or -20.00.' : (amountError(amount) ?? ''))
+      return
+    }
+    if (Math.abs(change) > MAX_AMOUNT_CENTS) {
+      setError('That changes the balance by too much. The most one adjustment can be is 999,999,999.99.')
       return
     }
     if (change === 0) {

@@ -2,16 +2,35 @@
 export const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
 
 /**
+ * The largest single amount allowed: 999,999,999.99. Far above any real transaction, and it
+ * keeps totals of many of them exact (well within JavaScript's safe integer range).
+ */
+export const MAX_AMOUNT_CENTS = 99_999_999_999
+
+const AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/
+
+/**
  * Converts user input like "12.5" or "1,200.99" into whole cents.
- * Returns null for anything that isn't a positive amount with at most 2 decimals.
+ * Returns null for anything that isn't a positive amount with at most 2 decimals, or that's
+ * above `MAX_AMOUNT_CENTS`.
  */
 export function parseAmountToCents(input: string): number | null {
   const cleaned = input.trim().replace(/,/g, '')
-  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null
+  if (!AMOUNT_PATTERN.test(cleaned)) return null
 
   const [whole, fraction = ''] = cleaned.split('.')
   const cents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'))
-  return cents > 0 && Number.isSafeInteger(cents) ? cents : null
+  return cents > 0 && cents <= MAX_AMOUNT_CENTS ? cents : null
+}
+
+/** Explains why an amount can't be used, or returns null when `parseAmountToCents` accepts it. */
+export function amountError(input: string): string | null {
+  if (parseAmountToCents(input) !== null) return null
+  const cleaned = input.trim().replace(/,/g, '')
+  if (AMOUNT_PATTERN.test(cleaned) && /[1-9]/.test(cleaned)) {
+    return 'That amount is too large. The most allowed is 999,999,999.99.'
+  }
+  return 'Enter an amount greater than 0, with up to 2 decimal places.'
 }
 
 /**

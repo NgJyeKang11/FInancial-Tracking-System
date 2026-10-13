@@ -12,6 +12,13 @@
   --accent: #2a78d6;
   --accent-text: #ffffff;
   --series-1: #2a78d6;
+  /* Spending-by-category pie slices, largest first (validated for colour-blind separation). */
+  --pie-1: #2a78d6;
+  --pie-2: #eb6834;
+  --pie-3: #1baf7a;
+  --pie-4: #eda100;
+  --pie-5: #e87ba4;
+  --pie-6: #008300;
   --danger: #d03b3b;
   --positive: #1a7f4b;
   --warning: #a85800;
@@ -38,6 +45,12 @@
     --hover: rgba(255, 255, 255, 0.05);
     --accent: #3987e5;
     --series-1: #3987e5;
+    --pie-1: #3987e5;
+    --pie-2: #d95926;
+    --pie-3: #199e70;
+    --pie-4: #c98500;
+    --pie-5: #d55181;
+    --pie-6: #008300;
     --danger: #e66767;
     --positive: #4cc38a;
     --warning: #f0a64a;
@@ -698,7 +711,28 @@ button.danger {
 .stat-value {
   font-size: 1.375rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+/*
+ * Long amounts shrink to fit the card's width (--chars is the text length, and a digit is
+ * about 0.62em wide), so they stay on one line instead of breaking mid-number.
+ */
+@supports (container-type: inline-size) {
+  .stat {
+    container-type: inline-size;
+  }
+  .stat-value {
+    font-size: min(1.375rem, calc(100cqi / (var(--chars, 1) * 0.62)));
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+}
+
+.stat-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .positive {
@@ -865,6 +899,62 @@ button.danger {
   fill: var(--text-secondary);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+.pie-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px 28px;
+}
+
+.pie {
+  width: 180px;
+  height: 180px;
+  flex: none;
+  margin: 0 auto;
+}
+
+.pie-legend {
+  flex: 1 1 220px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.pie-legend li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto 3.5ch;
+  align-items: center;
+  gap: 8px;
+}
+
+.pie-legend .swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.pie-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pie-amount,
+.pie-share {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pie-share {
+  color: var(--text-secondary);
 }
 
 .chart .chart-cursor {
