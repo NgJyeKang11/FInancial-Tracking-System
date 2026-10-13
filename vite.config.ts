@@ -3,7 +3,8 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // GitHub Pages serves the site from /<repo-name>/, so asset paths need that prefix.
-  base: '/FInancial-Tracking-System/',
+  // GitHub Pages serves the site from /<repo-name>/. Relative asset paths work under any
+  // repo name, so renaming the repo doesn't break the site.
+  base: './',
   plugins: [react()],
 })
