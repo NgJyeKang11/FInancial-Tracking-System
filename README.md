@@ -11,6 +11,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 ## Features
 
 - **Four simple pages:** Overview (balance, spending, income and recent transactions), Transactions, Budgets and Insights (charts), with a month switcher shared by all of them
+- **Settings (⚙):** account and sync, currency, your own categories, backups, and resetting everything, all in one place
 - **Add, edit and delete transactions** with an amount, category, date and an optional note, in a pop-up. Deleting happens straight away with an **Undo** bar instead of "Are you sure?"
 - **Change many at once:** on the Transactions page, tick several and move them to a category or delete them together
 - **Income and spending:** switch between Expense and Income when adding a transaction, each with its own categories
@@ -27,6 +28,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 - **Currency picker** (USD, EUR, MYR, SGD and more)
 - **Saves automatically** in your browser, so there's no account or server needed
 - **Backup and export:** download everything as a backup file and restore it later (or in another browser), or export transactions as CSV for a spreadsheet
+- **Reset everything:** a kill switch in Settings that deletes all data and resets the currency (and the signed-in account's copy). It lists what will go, offers a backup first, only works after typing RESET, and can be undone for 10 seconds
 - **Optional Google sign-in:** sign in to keep your data in your Google account and use it on any device. Changes sync automatically, and signing out removes the data from that device (see [Google sign-in setup](#google-sign-in-setup))
 - **Light and dark mode** (follows your system setting) and a layout that works on phones
 
@@ -87,7 +89,9 @@ src/
 │   ├── BulkBar.tsx          # Change the category of, or delete, several transactions
 │   ├── UndoToast.tsx        # The "Deleted … Undo" bar
 │   ├── MonthComparison.tsx  # Spending per category vs last month
+│   ├── SettingsPage.tsx     # Account, currency, your categories, backups, danger zone
 │   ├── DataMenu.tsx         # Download / restore a backup, export CSV
+│   ├── ResetDialog.tsx      # The "Reset everything?" warning, unlocked by typing RESET
 │   └── SpendingCharts.tsx   # Daily and per-category bar charts
 ├── hooks/
 │   ├── useTransactions.ts   # State + automatic saving to localStorage
@@ -95,6 +99,7 @@ src/
 │   ├── useRecurring.ts      # Recurring items + automatic saving to localStorage
 │   ├── useStoredState.ts    # State that's saved to localStorage whenever it changes
 │   ├── useCategories.ts     # Shares your own categories with every category picker
+│   ├── useAccountActions.ts # Sign-in / sign-out button behaviour, shared by the header and Settings
 │   └── useCloudSync.ts      # Keeps the data in step with the signed-in Google account
 └── lib/                     # Plain functions with unit tests
     ├── csv.ts               # CSV parsing, date/amount reading, column guessing, duplicate check

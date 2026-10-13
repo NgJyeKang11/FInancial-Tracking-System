@@ -4,13 +4,13 @@ import { AdjustBalanceDialog } from './components/AdjustBalanceDialog'
 import { BudgetAlerts } from './components/BudgetAlerts'
 import { BudgetPanel } from './components/BudgetPanel'
 import { BulkBar } from './components/BulkBar'
-import { CategoriesPanel } from './components/CategoriesPanel'
-import { DataMenu } from './components/DataMenu'
 import { ImportDialog } from './components/ImportDialog'
 import { MonthComparison } from './components/MonthComparison'
 import { MonthPicker } from './components/MonthPicker'
 import { RecentTransactions } from './components/RecentTransactions'
 import { RecurringPanel, type RecurringDraft } from './components/RecurringPanel'
+import { RESET_UNDO_SECONDS, ResetDialog } from './components/ResetDialog'
+import { SettingsPage } from './components/SettingsPage'
 import { SpendingCharts } from './components/SpendingCharts'
 import { SummaryCards } from './components/SummaryCards'
 import { TransactionDialog } from './components/TransactionDialog'
@@ -23,6 +23,7 @@ import { useRecurring } from './hooks/useRecurring'
 import { useStoredState } from './hooks/useStoredState'
 import { useTransactions } from './hooks/useTransactions'
 import { learnCategories } from './lib/categorize'
+import { EMPTY_DATA } from './lib/sync'
 import { addMonths, formatMonth, monthOf, todayISO } from './lib/dates'
 import { catchUp, dueTransactions } from './lib/recurring'
 import { balanceAsOf, balanceByDate, budgetStatuses, compareMonths, expensesOnly, inMonth } from './lib/stats'
@@ -46,8 +47,7 @@ import {
   type Transaction,
 } from './types'
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
-
+/** The pages in the menu. Settings is a page too, opened from the ⚙ button in the header. */
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'transactions', label: 'Transactions' },
@@ -55,10 +55,13 @@ const TABS = [
   { id: 'insights', label: 'Insights' },
 ] as const
 
-type Tab = (typeof TABS)[number]['id']
+type Tab = (typeof TABS)[number]['id'] | 'settings'
 
-/** The tab named in the address (#budgets), so a refresh or a shared link opens the same page. */
-const tabFromHash = (): Tab => TABS.find((t) => `#${t.id}` === window.location.hash)?.id ?? 'overview'
+/** The page named in the address (#budgets), so a refresh or a shared link opens the same page. */
+const tabFromHash = (): Tab =>
+  window.location.hash === '#settings'
+    ? 'settings'
+    : (TABS.find((t) => `#${t.id}` === window.location.hash)?.id ?? 'overview')
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
@@ -83,6 +86,7 @@ function App() {
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null)
   const clearUndo = useCallback(() => setUndoAction(null), [])
+  const [resetting, setResetting] = useState(false)
 
   const appData = useMemo<AppData>(
     () => ({ transactions, budgets, recurring, currency, customCategories, categoryRules }),
@@ -98,6 +102,26 @@ function App() {
     saveCurrency(data.currency)
   }
   const cloud = useCloudSync(appData, replaceAll)
+
+  /**
+   * Deletes all data: transactions, monthly items, budgets, categories, remembered categories
+   * and the currency (and, when signed in, the account's copy, as the change syncs). Undo
+   * puts it all back for a few seconds.
+   */
+  const resetEverything = () => {
+    const before = appData
+    replaceAll(EMPTY_DATA)
+    setUndoAction({
+      message: 'Everything was reset.',
+      undo: () => replaceAll(before),
+      showForMs: RESET_UNDO_SECONDS * 1000,
+    })
+    setSelected(null)
+    setSearch('')
+    setCategoryFilter('All')
+    setMonth(monthOf(todayISO()))
+    openTab('overview')
+  }
 
   useEffect(() => {
     const onHashChange = () => setTab(tabFromHash())
@@ -261,6 +285,16 @@ function App() {
             {cloud.enabled && (
               <AccountMenu user={cloud.user} status={cloud.status} onSignIn={cloud.signIn} onSignOut={cloud.signOut} />
             )}
+            <button
+              type="button"
+              className={tab === 'settings' ? 'settings-button selected' : 'settings-button'}
+              aria-label="Settings"
+              aria-current={tab === 'settings' ? 'page' : undefined}
+              title="Settings"
+              onClick={() => openTab('settings')}
+            >
+              ⚙
+            </button>
           </div>
         </header>
 
@@ -278,7 +312,7 @@ function App() {
               </button>
             ))}
           </nav>
-          {!(tab === 'transactions' && allTime) && <MonthPicker month={month} onChange={setMonth} />}
+          {!(tab === 'transactions' && allTime) && tab !== 'settings' && <MonthPicker month={month} onChange={setMonth} />}
         </div>
 
         <main className="page">
@@ -395,12 +429,12 @@ function App() {
                 currency={currency}
                 onChange={setBudget}
               />
-              <CategoriesPanel
-                custom={customCategories}
-                usage={(name) => transactions.filter((t) => t.category === name).length}
-                onAdd={(c) => setCustomCategories((prev) => [...prev, c])}
-                onRemove={handleRemoveCategory}
-              />
+              <p className="muted page-hint">
+                Want a category of your own, like Pets?{' '}
+                <button type="button" className="link" onClick={() => openTab('settings')}>
+                  Add it in Settings
+                </button>
+              </p>
             </>
           )}
 
@@ -417,27 +451,26 @@ function App() {
               <MonthComparison rows={comparison} month={month} currency={currency} />
             </>
           )}
-        </main>
 
-        <footer className="app-footer muted">
-          <div className="footer-tools">
-            <label className="currency">
-              Currency
-              <select value={currency} onChange={(e) => changeCurrency(e.target.value)}>
-                {CURRENCIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </label>
-            <DataMenu
+          {tab === 'settings' && (
+            <SettingsPage
               data={appData}
+              cloud={cloud}
+              onCurrencyChange={changeCurrency}
+              usage={(name) => transactions.filter((t) => t.category === name).length}
+              onAddCategory={(c) => setCustomCategories((prev) => [...prev, c])}
+              onRemoveCategory={handleRemoveCategory}
               onRestore={(data) => {
                 // Add any monthly items that came due since the backup was made.
                 const due = catchUp(data.transactions, data.recurring, todayISO())
                 replaceAll({ ...data, transactions: due.transactions, recurring: due.recurring })
               }}
+              onReset={() => setResetting(true)}
             />
-          </div>
+          )}
+        </main>
+
+        <footer className="app-footer muted">
           <span>Built with assistance from Claude</span>
         </footer>
 
@@ -463,6 +496,15 @@ function App() {
               add(input)
               setMonth(monthOf(input.date))
             }}
+          />
+        )}
+
+        {resetting && (
+          <ResetDialog
+            data={appData}
+            signedIn={cloud.user !== null}
+            onConfirm={resetEverything}
+            onClose={() => setResetting(false)}
           />
         )}
 

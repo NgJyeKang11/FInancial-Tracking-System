@@ -4,6 +4,8 @@ export interface UndoAction {
   /** Shown in the bar, e.g. "Deleted Lunch". */
   message: string
   undo: () => void
+  /** How long the bar stays up, if not the usual 7 seconds. */
+  showForMs?: number
 }
 
 interface Props {
@@ -11,7 +13,7 @@ interface Props {
   onDone: () => void
 }
 
-/** How long the Undo bar stays up. */
+/** How long the Undo bar usually stays up. */
 const SHOW_FOR_MS = 7000
 
 /**
@@ -21,7 +23,7 @@ const SHOW_FOR_MS = 7000
  */
 export function UndoToast({ action, onDone }: Props) {
   useEffect(() => {
-    const timer = setTimeout(onDone, SHOW_FOR_MS)
+    const timer = setTimeout(onDone, action.showForMs ?? SHOW_FOR_MS)
     return () => clearTimeout(timer)
   }, [action, onDone])
 

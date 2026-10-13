@@ -11,6 +11,9 @@ export interface CloudUser {
   photoURL: string | null
 }
 
+/** The person's first initial, for when there's no profile picture. */
+export const initialOf = (user: CloudUser) => (user.name || user.email || '?').charAt(0).toUpperCase()
+
 /**
  * Loads Firebase the first time it's needed, so it doesn't slow down the app for anyone
  * who never signs in.
