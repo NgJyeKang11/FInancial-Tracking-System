@@ -265,7 +265,7 @@ h2 {
   line-height: 1;
 }
 
-.month-picker button:hover {
+.month-picker button:hover:not(:disabled) {
   background: var(--hover);
 }
 
