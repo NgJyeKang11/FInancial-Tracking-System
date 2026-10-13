@@ -2,7 +2,7 @@
 
 A web app for logging daily income and spending, tracking your balance, and seeing where your money goes, by day and by category.
 
-**Live demo:** https://ngjyekang11.github.io/FInancial-Tracking-System/
+**Live demo:** https://ngjyekang11.github.io/Telemachus/
 
 ![Screenshot of the Telemachus dashboard](docs/screenshot.png)
 
@@ -50,13 +50,13 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 You need [Node.js](https://nodejs.org) 20 or newer.
 
 ```bash
-git clone https://github.com/NgJyeKang11/FInancial-Tracking-System.git
-cd FInancial-Tracking-System
+git clone https://github.com/NgJyeKang11/Telemachus.git
+cd Telemachus
 npm install
 npm run dev
 ```
 
-Then open the link Vite prints (usually http://localhost:5173/FInancial-Tracking-System/).
+Then open the link Vite prints (usually http://localhost:5173/).
 
 | Command | What it does |
 | --- | --- |
