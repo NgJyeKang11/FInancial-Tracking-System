@@ -7,14 +7,12 @@ interface Props {
   data: AppData
   /** Replaces everything with a backup's data. */
   onRestore: (data: AppData) => void
-  /** Opens the "Reset everything" warning. */
-  onReset: () => void
 }
 
 const MAX_BACKUP_BYTES = 20 * 1024 * 1024
 
-/** Footer links to download a backup, restore one, export transactions as CSV, or reset everything. */
-export function DataMenu({ data, onRestore, onReset }: Props) {
+/** The "Backup & export" settings: download a backup, restore one, or export transactions as CSV. */
+export function DataMenu({ data, onRestore }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
 
@@ -41,24 +39,27 @@ export function DataMenu({ data, onRestore, onReset }: Props) {
   }
 
   return (
-    <div className="data-menu">
-      <button type="button" className="link" onClick={() => downloadBackup(data)}>
-        Download backup
-      </button>
-      <button type="button" className="link" onClick={() => fileRef.current?.click()}>
-        Restore backup
-      </button>
-      <button
-        type="button"
-        className="link"
-        disabled={data.transactions.length === 0}
-        onClick={() => downloadText(`telemachus-transactions-${todayISO()}.csv`, toCsv(data.transactions), 'text/csv')}
-      >
-        Export CSV
-      </button>
-      <button type="button" className="link danger" onClick={onReset}>
-        Reset everything
-      </button>
+    <section className="card settings-card" aria-labelledby="data-title">
+      <h2 id="data-title">Backup &amp; export</h2>
+      <p className="muted">
+        A backup is one file with everything in it. Keep it somewhere safe and restore it here, or in another browser,
+        any time.
+      </p>
+      <div className="settings-actions">
+        <button type="button" onClick={() => downloadBackup(data)}>
+          Download backup
+        </button>
+        <button type="button" onClick={() => fileRef.current?.click()}>
+          Restore backup
+        </button>
+        <button
+          type="button"
+          disabled={data.transactions.length === 0}
+          onClick={() => downloadText(`telemachus-transactions-${todayISO()}.csv`, toCsv(data.transactions), 'text/csv')}
+        >
+          Export CSV
+        </button>
+      </div>
       <input
         ref={fileRef}
         type="file"
@@ -71,10 +72,10 @@ export function DataMenu({ data, onRestore, onReset }: Props) {
         }}
       />
       {message && (
-        <span className={message.error ? 'error' : 'muted'} role={message.error ? 'alert' : 'status'}>
+        <p className={message.error ? 'error' : 'muted'} role={message.error ? 'alert' : 'status'}>
           {message.text}
-        </span>
+        </p>
       )}
-    </div>
+    </section>
   )
 }

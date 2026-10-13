@@ -1,3 +1,6 @@
+/** The currencies offered in Settings. */
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
+
 /**
  * Converts user input like "12.5" or "1,200.99" into whole cents.
  * Returns null for anything that isn't a positive amount with at most 2 decimals.

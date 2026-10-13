@@ -76,29 +76,11 @@ h1 .byline {
 }
 
 .app-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
   font-size: 0.8125rem;
-}
-
-.app-footer .currency {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  font-weight: 400;
-  color: inherit;
-}
-
-.app-footer select {
-  min-height: 32px;
-  padding: 2px 6px;
-  font-size: 0.8125rem;
+  text-align: center;
 }
 
 h2 {
@@ -1227,28 +1209,88 @@ button.danger {
   font-size: 0.8125rem;
 }
 
-/* ---------- Footer tools ---------- */
+/* ---------- Settings ---------- */
 
-.footer-tools {
+.settings-button {
+  width: 40px;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.settings-button.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.settings-card > * {
+  max-width: 100%;
+}
+
+.settings-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 20px;
+  gap: 8px;
 }
 
-.data-menu {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
+.settings-select {
+  min-width: 140px;
 }
 
-.data-menu button.link {
-  font-size: 0.8125rem;
+.danger-zone {
+  border-color: var(--danger);
 }
 
-.data-menu button.link.danger {
+.danger-zone h2 {
   color: var(--danger);
+}
+
+.account-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.account-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--chip-text);
+  font-weight: 700;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-who {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.page-hint {
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 /* ---------- Reset everything ---------- */
@@ -1295,10 +1337,4 @@ button.danger-solid:hover {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-}
-
-.data-menu button.link:disabled {
-  color: var(--text-muted);
-  text-decoration: none;
-  cursor: default;
 }

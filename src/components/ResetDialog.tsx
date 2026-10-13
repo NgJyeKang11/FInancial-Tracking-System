@@ -13,11 +13,15 @@ interface Props {
 /** What has to be typed to unlock the Delete button. */
 const CONFIRM_WORD = 'RESET'
 
+/** How long Undo is offered after a reset. */
+export const RESET_UNDO_SECONDS = 10
+
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 /**
  * The "Reset everything" warning. It lists what will be deleted, offers a backup first, and
- * only deletes once RESET is typed, so it can't happen by a stray click.
+ * only deletes once RESET is typed, so it can't happen by a stray click. Undo is offered for
+ * a few seconds afterwards.
  */
 export function ResetDialog({ data, signedIn, onConfirm, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -44,6 +48,7 @@ export function ResetDialog({ data, signedIn, onConfirm, onClose }: Props) {
     count(budgets, 'budget', 'budgets'),
     count(data.customCategories.length, 'category you added', 'categories you added'),
     count(remembered, 'remembered import category', 'remembered import categories'),
+    `your currency setting (${data.currency}, back to USD)`,
   ]
 
   const handleSubmit = (e: FormEvent) => {
@@ -59,12 +64,15 @@ export function ResetDialog({ data, signedIn, onConfirm, onClose }: Props) {
         <h2 id="reset-title">Reset everything?</h2>
 
         <div className="reset-warning" role="alert">
-          <strong>Caution: this can't be undone.</strong> It permanently deletes:
+          <strong>Caution: this deletes everything.</strong> It removes:
           <ul>
             {losses.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
+          <p>
+            You'll have {RESET_UNDO_SECONDS} seconds to undo it. After that it's <strong>permanent</strong>.
+          </p>
           {signedIn && (
             <p>
               You're signed in, so this also wipes the copy in your Google account, on <strong>every device</strong>.
