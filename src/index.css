@@ -926,9 +926,15 @@ button.danger {
   font-size: inherit;
 }
 
+.day-header {
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
 .day-totals {
   display: flex;
   gap: 12px;
+  white-space: nowrap;
 }
 
 .day-totals .muted {
@@ -1024,4 +1030,225 @@ button.danger {
 .empty {
   text-align: center;
   padding: 32px 16px;
+}
+
+/* ---------- Picking several transactions ---------- */
+
+.row.selectable {
+  grid-template-columns: auto 1fr auto;
+}
+
+.row.selectable input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+}
+
+.row.is-selected {
+  background: var(--hover);
+}
+
+.bulk-bar {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.bulk-count {
+  font-weight: 700;
+}
+
+.bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.bulk-actions select {
+  max-width: 220px;
+}
+
+/* ---------- Undo bar ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 20;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Without this, the bar only gets the right-hand half of the screen to lay out in. */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 16px;
+  background: var(--text);
+  color: var(--page);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: 0.9375rem;
+}
+
+.toast button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+.toast button:first-of-type {
+  color: var(--accent);
+  filter: brightness(1.2);
+}
+
+.toast button:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+
+.toast-close {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* ---------- Your categories ---------- */
+
+.categories {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+}
+
+.category-chips button {
+  min-height: 0;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.category-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-form input {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* ---------- Compared with last month ---------- */
+
+.comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.comparison th,
+.comparison td {
+  padding: 8px 10px;
+  text-align: left;
+  border-top: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.comparison thead th {
+  border-top: none;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.comparison tbody th {
+  font-weight: 500;
+}
+
+.comparison tfoot th,
+.comparison tfoot td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+
+.comparison .num {
+  text-align: right;
+}
+
+.comparison .change.up {
+  color: var(--danger);
+}
+
+.comparison .change.down {
+  color: var(--positive);
+}
+
+.comparison-note {
+  font-size: 0.8125rem;
+}
+
+/* ---------- Footer tools ---------- */
+
+.footer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+
+.data-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.data-menu button.link {
+  font-size: 0.8125rem;
+}
+
+.data-menu button.link:disabled {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: default;
 }

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { loadBudgets, loadTransactions, saveBudgets, saveTransactions } from './storage'
+import {
+  loadBudgets,
+  loadCategoryRules,
+  loadCustomCategories,
+  loadTransactions,
+  saveBudgets,
+  saveCategoryRules,
+  saveCustomCategories,
+  saveTransactions,
+} from './storage'
 
 /** A minimal in-memory stand-in for the browser's localStorage. */
 function memoryStorage(): Storage {
@@ -38,17 +47,24 @@ describe('storage', () => {
     ])
   })
 
-  it('rejects a category that does not belong to the transaction type', () => {
+  it('rejects an unknown type and a blank or padded category', () => {
     const storage = memoryStorage()
     storage.setItem(
       'fts.transactions.v1',
       JSON.stringify([
-        { id: 'x', type: 'income', amountCents: 100, category: 'Groceries', date: '2026-10-12', note: '' },
-        { id: 'y', type: 'expense', amountCents: 100, category: 'Salary', date: '2026-10-12', note: '' },
+        { id: 'x', type: 'income', amountCents: 100, category: '', date: '2026-10-12', note: '' },
+        { id: 'y', type: 'expense', amountCents: 100, category: ' Pets ', date: '2026-10-12', note: '' },
         { id: 'z', type: 'transfer', amountCents: 100, category: 'Other', date: '2026-10-12', note: '' },
       ]),
     )
     expect(loadTransactions(storage)).toEqual([])
+  })
+
+  it("keeps the person's own category names", () => {
+    const storage = memoryStorage()
+    const pets = { id: 'p', type: 'expense' as const, amountCents: 100, category: 'Pets', date: '2026-10-12', note: '' }
+    saveTransactions([pets], storage)
+    expect(loadTransactions(storage)).toEqual([pets])
   })
 
   it('returns an empty list for missing or corrupt data', () => {
@@ -65,7 +81,7 @@ describe('storage', () => {
       JSON.stringify([
         { id: 'ok', amountCents: 100, category: 'Other', date: '2026-10-12', note: '' },
         { id: 'bad-amount', amountCents: 1.5, category: 'Other', date: '2026-10-12', note: '' },
-        { id: 'bad-category', amountCents: 100, category: 'Nope', date: '2026-10-12', note: '' },
+        { id: 'bad-category', amountCents: 100, category: 42, date: '2026-10-12', note: '' },
       ]),
     )
     expect(loadTransactions(storage).map((t) => t.id)).toEqual(['ok'])
@@ -92,8 +108,47 @@ describe('budget storage', () => {
     const storage = memoryStorage()
     storage.setItem(
       'fts.budgets.v1',
-      JSON.stringify({ Groceries: 5000, Salary: 5000, Health: 0, Shopping: -1, Transport: 1.5, Other: '100' }),
+      JSON.stringify({ Groceries: 5000, Adjustment: 5000, '': 5000, Health: 0, Shopping: -1, Transport: 1.5, Other: '100' }),
     )
     expect(loadBudgets(storage)).toEqual({ Groceries: 5000 })
+  })
+
+  it("keeps budgets for the person's own categories", () => {
+    const storage = memoryStorage()
+    saveBudgets({ Pets: 5000 }, storage)
+    expect(loadBudgets(storage)).toEqual({ Pets: 5000 })
+  })
+})
+
+describe('custom category storage', () => {
+  it('round-trips categories and drops broken, too long or repeated ones', () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'fts.categories.v1',
+      JSON.stringify([
+        { name: 'Pets', type: 'expense' },
+        { name: 'Allowance', type: 'income' },
+        { name: 'pets', type: 'income' },
+        { name: 'x'.repeat(31), type: 'expense' },
+        { name: 'Gym', type: 'transfer' },
+        'nonsense',
+      ]),
+    )
+    expect(loadCustomCategories(storage)).toEqual([
+      { name: 'Pets', type: 'expense' },
+      { name: 'Allowance', type: 'income' },
+    ])
+    saveCustomCategories([{ name: 'Books', type: 'expense' }], storage)
+    expect(loadCustomCategories(storage)).toEqual([{ name: 'Books', type: 'expense' }])
+  })
+
+  it('round-trips remembered categories and drops broken ones', () => {
+    const storage = memoryStorage()
+    saveCategoryRules({ 'expense|transfer to ahmad': 'Pets' }, storage)
+    expect(loadCategoryRules(storage)).toEqual({ 'expense|transfer to ahmad': 'Pets' })
+    storage.setItem('fts.categoryRules.v1', JSON.stringify({ good: 'Pets', bad: 5, '': 'Pets' }))
+    expect(loadCategoryRules(storage)).toEqual({ good: 'Pets' })
+    storage.setItem('fts.categoryRules.v1', '{not json')
+    expect(loadCategoryRules(storage)).toEqual({})
   })
 })

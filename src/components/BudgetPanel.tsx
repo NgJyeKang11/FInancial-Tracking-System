@@ -1,18 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { centsToInput, formatCents, parseAmountToCents } from '../lib/money'
 import { budgetState, spentByCategory } from '../lib/stats'
-import { CATEGORIES, type Budgets, type ExpenseCategory, type Transaction } from '../types'
+import { useCustomCategories } from '../hooks/useCategories'
+import { budgetCategories, type Budgets, type Category, type Transaction } from '../types'
 
 interface Props {
   /** Transactions in the selected month; only expenses count against budgets. */
   monthTransactions: Transaction[]
   budgets: Budgets
   currency: string
-  onChange: (category: ExpenseCategory, cents: number | null) => void
+  onChange: (category: Category, cents: number | null) => void
 }
 
 interface RowProps {
-  category: ExpenseCategory
+  category: Category
   budgetCents: number | undefined
   spentCents: number
   currency: string
@@ -94,13 +95,14 @@ function BudgetRow({ category, budgetCents, spentCents, currency, onChange }: Ro
 
 export function BudgetPanel({ monthTransactions, budgets, currency, onChange }: Props) {
   const spent = spentByCategory(monthTransactions)
+  const categories = budgetCategories(useCustomCategories())
 
   return (
     <section className="card budgets" aria-label="Monthly budgets">
       <h2>Monthly budgets</h2>
       <p className="muted">Set a limit per category. It applies to every month.</p>
       <ul>
-        {CATEGORIES.map((category) => (
+        {categories.map((category) => (
           <BudgetRow
             key={category}
             category={category}

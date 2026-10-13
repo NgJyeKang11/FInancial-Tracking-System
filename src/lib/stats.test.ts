@@ -6,6 +6,7 @@ import {
   balanceByDate,
   budgetState,
   budgetStatuses,
+  compareMonths,
   dailyTotals,
   expensesOnly,
   groupByDay,
@@ -156,6 +157,36 @@ describe('budgets', () => {
 
   it('returns nothing when there are no budgets', () => {
     expect(budgetStatuses(october, {})).toEqual([])
+  })
+})
+
+describe('budgets for custom categories', () => {
+  it('follows the given order and puts unknown categories last', () => {
+    const statuses = budgetStatuses([tx('a', '2026-10-01', 2000, 'Pets')], { Pets: 5000, Groceries: 100, Books: 10 }, [
+      'Groceries',
+      'Pets',
+    ])
+    expect(statuses.map((s) => [s.category, s.spentCents])).toEqual([
+      ['Groceries', 0],
+      ['Pets', 2000],
+      ['Books', 0],
+    ])
+  })
+})
+
+describe('compareMonths', () => {
+  it('lines up each category across two months, biggest this month first', () => {
+    const thisMonth = [
+      tx('a', '2026-10-02', 3000, 'Food & Drink'),
+      tx('b', '2026-10-03', 500, 'Transport'),
+      tx('c', '2026-10-04', 900, 'Salary', 'income'),
+    ]
+    const lastMonth = [tx('d', '2026-09-02', 2000, 'Food & Drink'), tx('e', '2026-09-05', 1500, 'Shopping')]
+    expect(compareMonths(thisMonth, lastMonth)).toEqual([
+      { category: 'Food & Drink', thisCents: 3000, lastCents: 2000, changeCents: 1000 },
+      { category: 'Transport', thisCents: 500, lastCents: 0, changeCents: 500 },
+      { category: 'Shopping', thisCents: 0, lastCents: 1500, changeCents: -1500 },
+    ])
   })
 })
 

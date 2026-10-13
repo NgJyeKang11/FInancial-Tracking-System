@@ -25,15 +25,19 @@ describe('parseAppData', () => {
   it('keeps valid entries and drops broken ones', () => {
     const data = parseAppData({
       transactions: [tx('a'), { id: 'bad', amountCents: -5 }],
-      budgets: { Groceries: 30000, Nonsense: 5 },
+      budgets: { Groceries: 30000, Adjustment: 5 },
       recurring: [allowance, { id: 'x' }],
       currency: 'MYR',
+      customCategories: [{ name: 'Pets', type: 'expense' }, { name: '' }],
+      categoryRules: { 'expense|vet': 'Pets', bad: 1 },
     })
     expect(data).toEqual({
       transactions: [tx('a')],
       budgets: { Groceries: 30000 },
       recurring: [allowance],
       currency: 'MYR',
+      customCategories: [{ name: 'Pets', type: 'expense' }],
+      categoryRules: { 'expense|vet': 'Pets' },
     })
   })
 
@@ -76,6 +80,31 @@ describe('mergeData', () => {
     const account: AppData = { ...EMPTY_DATA, budgets: { Groceries: 300 }, currency: 'SGD' }
     expect(mergeData(device, account)).toMatchObject({ budgets: { Groceries: 300, Transport: 200 }, currency: 'SGD' })
     expect(mergeData(device, EMPTY_DATA).currency).toBe('MYR')
+  })
+})
+
+describe('mergeData with custom categories', () => {
+  it('keeps categories from both, once per name, and the account wins remembered categories', () => {
+    const device: AppData = {
+      ...EMPTY_DATA,
+      customCategories: [
+        { name: 'pets', type: 'expense' },
+        { name: 'Books', type: 'expense' },
+      ],
+      categoryRules: { 'expense|vet': 'Health', 'expense|kedai buku': 'Books' },
+    }
+    const account: AppData = {
+      ...EMPTY_DATA,
+      customCategories: [{ name: 'Pets', type: 'expense' }],
+      categoryRules: { 'expense|vet': 'Pets' },
+    }
+    expect(mergeData(device, account)).toMatchObject({
+      customCategories: [
+        { name: 'Pets', type: 'expense' },
+        { name: 'Books', type: 'expense' },
+      ],
+      categoryRules: { 'expense|vet': 'Pets', 'expense|kedai buku': 'Books' },
+    })
   })
 })
 

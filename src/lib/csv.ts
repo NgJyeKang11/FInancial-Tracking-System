@@ -1,4 +1,4 @@
-import type { TransactionInput } from '../types'
+import type { CategoryRules, TransactionInput } from '../types'
 import { categorize } from './categorize'
 import { daysInMonth } from './dates'
 
@@ -20,6 +20,8 @@ export interface ImportOptions {
   dateOrder: DateOrder
   /** For banks (often credit cards) that list spending as positive numbers. */
   flipSigns: boolean
+  /** Categories picked in earlier imports, used before the keyword guesses. */
+  remembered?: CategoryRules
 }
 
 export type ImportRow =
@@ -199,7 +201,7 @@ const cell = (row: string[], index: number) => (index >= 0 ? (row[index] ?? '') 
  * the original file (1-based), counting a header row if the caller left it in `rows`.
  */
 export function rowsToTransactions(rows: string[][], options: ImportOptions, firstLine = 1): ImportRow[] {
-  const { columns, dateOrder, flipSigns } = options
+  const { columns, dateOrder, flipSigns, remembered } = options
 
   return rows.map((row, i): ImportRow => {
     const line = firstLine + i
@@ -227,7 +229,7 @@ export function rowsToTransactions(rows: string[][], options: ImportOptions, fir
       input: {
         type,
         amountCents: Math.abs(signed),
-        category: categorize(description, type),
+        category: categorize(description, type, remembered),
         date,
         note: description.slice(0, MAX_NOTE_LENGTH),
       },
