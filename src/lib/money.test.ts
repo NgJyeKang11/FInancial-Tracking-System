@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { centsToInput, parseAmountToCents } from './money'
+import { centsToInput, parseAmountToCents, parseBalanceToCents } from './money'
 
 describe('parseAmountToCents', () => {
   it('parses whole and decimal amounts', () => {
@@ -17,6 +17,21 @@ describe('parseAmountToCents', () => {
   it('rejects invalid amounts', () => {
     for (const bad of ['', 'abc', '-5', '0', '0.00', '1.234', '1e5', '.5']) {
       expect(parseAmountToCents(bad)).toBeNull()
+    }
+  })
+})
+
+describe('parseBalanceToCents', () => {
+  it('accepts zero and negative balances', () => {
+    expect(parseBalanceToCents('1,234.50')).toBe(123450)
+    expect(parseBalanceToCents('-45.2')).toBe(-4520)
+    expect(parseBalanceToCents('0')).toBe(0)
+    expect(parseBalanceToCents('0.00')).toBe(0)
+  })
+
+  it('rejects anything that is not an amount', () => {
+    for (const bad of ['', '-', 'abc', '1.234', '--5', '.']) {
+      expect(parseBalanceToCents(bad)).toBeNull()
     }
   })
 })

@@ -55,8 +55,8 @@ export function totalsByCategory(
   for (const t of expensesOnly(transactions)) {
     totals.set(t.category, (totals.get(t.category) ?? 0) + t.amountCents)
   }
-  return CATEGORIES.filter((c) => totals.has(c))
-    .map((category) => ({ category, cents: totals.get(category)! }))
+  return [...totals]
+    .map(([category, cents]) => ({ category, cents }))
     .sort((a, b) => b.cents - a.cents)
 }
 

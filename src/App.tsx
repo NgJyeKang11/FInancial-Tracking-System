@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AdjustBalanceDialog } from './components/AdjustBalanceDialog'
 import { BudgetAlerts } from './components/BudgetAlerts'
 import { BudgetPanel } from './components/BudgetPanel'
 import { ImportDialog } from './components/ImportDialog'
 import { MonthPicker } from './components/MonthPicker'
 import { RecentTransactions } from './components/RecentTransactions'
+import { RecurringPanel, type RecurringDraft } from './components/RecurringPanel'
 import { SpendingCharts } from './components/SpendingCharts'
 import { SummaryCards } from './components/SummaryCards'
 import { TransactionDialog } from './components/TransactionDialog'
 import { TransactionList } from './components/TransactionList'
 import { useBudgets } from './hooks/useBudgets'
+import { useRecurring } from './hooks/useRecurring'
 import { useTransactions } from './hooks/useTransactions'
-import { monthOf, todayISO } from './lib/dates'
-import { balanceByDate, budgetStatuses, expensesOnly, inMonth } from './lib/stats'
+import { addMonths, formatMonth, monthOf, todayISO } from './lib/dates'
+import { dueTransactions } from './lib/recurring'
+import { balanceAsOf, balanceByDate, budgetStatuses, expensesOnly, inMonth } from './lib/stats'
 import { loadCurrency, saveCurrency } from './lib/storage'
-import { CATEGORIES, INCOME_CATEGORIES, type Category, type Transaction } from './types'
+import { ADJUSTMENT, CATEGORIES, INCOME_CATEGORIES, type Category, type Recurring, type Transaction } from './types'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
 
@@ -32,8 +36,12 @@ const tabFromHash = (): Tab => TABS.find((t) => `#${t.id}` === window.location.h
 function App() {
   const { transactions, add, addMany, update, remove } = useTransactions()
   const { budgets, setBudget } = useBudgets()
+  const { recurring, add: addRecurring, remove: removeRecurring } = useRecurring()
   const [tab, setTab] = useState<Tab>(tabFromHash)
   const [importing, setImporting] = useState(false)
+  const [adjusting, setAdjusting] = useState(false)
+  /** The Transactions page lists every month by default, so old ones are easy to find. */
+  const [allTime, setAllTime] = useState(true)
   /** The add / edit pop-up: 'new' to add, a transaction to edit, null when closed. */
   const [form, setForm] = useState<Transaction | 'new' | null>(null)
   const [month, setMonth] = useState(monthOf(todayISO()))
@@ -53,9 +61,10 @@ function App() {
   }
 
   const monthTransactions = useMemo(() => inMonth(transactions, month), [transactions, month])
+  // Reversed first so that, within a day, the most recently added comes first.
   const newestFirst = useMemo(
-    () => [...monthTransactions].sort((a, b) => b.date.localeCompare(a.date)),
-    [monthTransactions],
+    () => [...transactions].reverse().sort((a, b) => b.date.localeCompare(a.date)),
+    [transactions],
   )
   const monthExpenses = useMemo(() => expensesOnly(monthTransactions), [monthTransactions])
   const statuses = useMemo(() => budgetStatuses(monthTransactions, budgets), [monthTransactions, budgets])
@@ -65,12 +74,12 @@ function App() {
 
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return monthTransactions.filter(
+    return (allTime ? transactions : monthTransactions).filter(
       (t) =>
         (categoryFilter === 'All' || t.category === categoryFilter) &&
         (query === '' || t.note.toLowerCase().includes(query)),
     )
-  }, [monthTransactions, categoryFilter, search])
+  }, [allTime, transactions, monthTransactions, categoryFilter, search])
 
   const changeCurrency = (value: string) => {
     setCurrency(value)
@@ -80,6 +89,24 @@ function App() {
   const handleDelete = (t: Transaction) => {
     if (!window.confirm(`Delete this ${t.category} transaction?`)) return
     remove(t.id)
+  }
+
+  const handleAddRecurring = (draft: RecurringDraft, startThisMonth: boolean) => {
+    const thisMonth = monthOf(todayISO())
+    // `lastMonth` is the month before the first one to add.
+    const item: Recurring = {
+      ...draft,
+      id: crypto.randomUUID(),
+      lastMonth: startThisMonth ? addMonths(thisMonth, -1) : thisMonth,
+    }
+    const { inputs, item: updated } = dueTransactions(item, todayISO())
+    addRecurring(updated)
+    if (inputs.length > 0) addMany(inputs)
+  }
+
+  const handleRemoveRecurring = (r: Recurring) => {
+    if (!window.confirm(`Stop adding "${r.note || r.category}" every month? Ones already added stay.`)) return
+    removeRecurring(r.id)
   }
 
   const stats = { all: transactions, monthTransactions, month, currency }
@@ -114,7 +141,7 @@ function App() {
             </button>
           ))}
         </nav>
-        <MonthPicker month={month} onChange={setMonth} />
+        {!(tab === 'transactions' && allTime) && <MonthPicker month={month} onChange={setMonth} />}
       </div>
 
       <main className="page">
@@ -134,7 +161,7 @@ function App() {
             </div>
           ) : (
             <>
-              <SummaryCards {...stats} show={['balance', 'spent', 'income']} />
+              <SummaryCards {...stats} show={['balance', 'spent', 'income']} onAdjustBalance={() => setAdjusting(true)} />
               <BudgetAlerts statuses={statuses} currency={currency} />
               <RecentTransactions
                 transactions={newestFirst}
@@ -156,6 +183,14 @@ function App() {
                 onChange={(e) => setSearch(e.target.value)}
               />
               <select
+                aria-label="Which months to show"
+                value={allTime ? 'all' : 'month'}
+                onChange={(e) => setAllTime(e.target.value === 'all')}
+              >
+                <option value="all">All time</option>
+                <option value="month">{formatMonth(month)}</option>
+              </select>
+              <select
                 aria-label="Category"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value as Category | 'All')}
@@ -171,6 +206,7 @@ function App() {
                     <option key={c}>{c}</option>
                   ))}
                 </optgroup>
+                <option>{ADJUSTMENT}</option>
               </select>
             </div>
             <TransactionList
@@ -186,6 +222,12 @@ function App() {
         {tab === 'budgets' && (
           <>
             <BudgetAlerts statuses={statuses} currency={currency} />
+            <RecurringPanel
+              recurring={recurring}
+              currency={currency}
+              onAdd={handleAddRecurring}
+              onRemove={handleRemoveRecurring}
+            />
             <BudgetPanel
               monthTransactions={monthTransactions}
               budgets={budgets}
@@ -229,6 +271,18 @@ function App() {
             if (form === 'new') add(input)
             else update(form.id, input)
             // Show the transaction's month so the user can see what they just saved.
+            setMonth(monthOf(input.date))
+          }}
+        />
+      )}
+
+      {adjusting && (
+        <AdjustBalanceDialog
+          balanceCents={balanceAsOf(transactions, todayISO())}
+          currency={currency}
+          onClose={() => setAdjusting(false)}
+          onSave={(input) => {
+            add(input)
             setMonth(monthOf(input.date))
           }}
         />
