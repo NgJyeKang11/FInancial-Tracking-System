@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { downloadText, parseBackup, toBackupJson, toCsv } from '../lib/backup'
+import { downloadBackup, downloadText, parseBackup, toCsv } from '../lib/backup'
 import { todayISO } from '../lib/dates'
 import type { AppData } from '../types'
 
@@ -7,12 +7,14 @@ interface Props {
   data: AppData
   /** Replaces everything with a backup's data. */
   onRestore: (data: AppData) => void
+  /** Opens the "Reset everything" warning. */
+  onReset: () => void
 }
 
 const MAX_BACKUP_BYTES = 20 * 1024 * 1024
 
-/** Footer links to download a backup, restore one, or export transactions as CSV. */
-export function DataMenu({ data, onRestore }: Props) {
+/** Footer links to download a backup, restore one, export transactions as CSV, or reset everything. */
+export function DataMenu({ data, onRestore, onReset }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
 
@@ -40,11 +42,7 @@ export function DataMenu({ data, onRestore }: Props) {
 
   return (
     <div className="data-menu">
-      <button
-        type="button"
-        className="link"
-        onClick={() => downloadText(`telemachus-backup-${todayISO()}.json`, toBackupJson(data), 'application/json')}
-      >
+      <button type="button" className="link" onClick={() => downloadBackup(data)}>
         Download backup
       </button>
       <button type="button" className="link" onClick={() => fileRef.current?.click()}>
@@ -57,6 +55,9 @@ export function DataMenu({ data, onRestore }: Props) {
         onClick={() => downloadText(`telemachus-transactions-${todayISO()}.csv`, toCsv(data.transactions), 'text/csv')}
       >
         Export CSV
+      </button>
+      <button type="button" className="link danger" onClick={onReset}>
+        Reset everything
       </button>
       <input
         ref={fileRef}

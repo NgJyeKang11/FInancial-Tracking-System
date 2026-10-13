@@ -11,6 +11,7 @@ import { MonthComparison } from './components/MonthComparison'
 import { MonthPicker } from './components/MonthPicker'
 import { RecentTransactions } from './components/RecentTransactions'
 import { RecurringPanel, type RecurringDraft } from './components/RecurringPanel'
+import { ResetDialog } from './components/ResetDialog'
 import { SpendingCharts } from './components/SpendingCharts'
 import { SummaryCards } from './components/SummaryCards'
 import { TransactionDialog } from './components/TransactionDialog'
@@ -23,6 +24,7 @@ import { useRecurring } from './hooks/useRecurring'
 import { useStoredState } from './hooks/useStoredState'
 import { useTransactions } from './hooks/useTransactions'
 import { learnCategories } from './lib/categorize'
+import { EMPTY_DATA } from './lib/sync'
 import { addMonths, formatMonth, monthOf, todayISO } from './lib/dates'
 import { catchUp, dueTransactions } from './lib/recurring'
 import { balanceAsOf, balanceByDate, budgetStatuses, compareMonths, expensesOnly, inMonth } from './lib/stats'
@@ -83,6 +85,7 @@ function App() {
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null)
   const clearUndo = useCallback(() => setUndoAction(null), [])
+  const [resetting, setResetting] = useState(false)
 
   const appData = useMemo<AppData>(
     () => ({ transactions, budgets, recurring, currency, customCategories, categoryRules }),
@@ -98,6 +101,21 @@ function App() {
     saveCurrency(data.currency)
   }
   const cloud = useCloudSync(appData, replaceAll)
+
+  /**
+   * Deletes all data: transactions, monthly items, budgets, categories and remembered
+   * categories (and, when signed in, the account's copy, as the change syncs). The currency
+   * stays, since it's a display setting rather than data.
+   */
+  const resetEverything = () => {
+    replaceAll({ ...EMPTY_DATA, currency })
+    setUndoAction(null)
+    setSelected(null)
+    setSearch('')
+    setCategoryFilter('All')
+    setMonth(monthOf(todayISO()))
+    openTab('overview')
+  }
 
   useEffect(() => {
     const onHashChange = () => setTab(tabFromHash())
@@ -436,6 +454,7 @@ function App() {
                 const due = catchUp(data.transactions, data.recurring, todayISO())
                 replaceAll({ ...data, transactions: due.transactions, recurring: due.recurring })
               }}
+              onReset={() => setResetting(true)}
             />
           </div>
           <span>Built with assistance from Claude</span>
@@ -463,6 +482,15 @@ function App() {
               add(input)
               setMonth(monthOf(input.date))
             }}
+          />
+        )}
+
+        {resetting && (
+          <ResetDialog
+            data={appData}
+            signedIn={cloud.user !== null}
+            onConfirm={resetEverything}
+            onClose={() => setResetting(false)}
           />
         )}
 

@@ -27,6 +27,7 @@ Built with assistance from [Claude](https://claude.com/claude-code).
 - **Currency picker** (USD, EUR, MYR, SGD and more)
 - **Saves automatically** in your browser, so there's no account or server needed
 - **Backup and export:** download everything as a backup file and restore it later (or in another browser), or export transactions as CSV for a spreadsheet
+- **Reset everything:** a kill switch that deletes all data (and the signed-in account's copy). It lists what will go, offers a backup first, and only works after typing RESET
 - **Optional Google sign-in:** sign in to keep your data in your Google account and use it on any device. Changes sync automatically, and signing out removes the data from that device (see [Google sign-in setup](#google-sign-in-setup))
 - **Light and dark mode** (follows your system setting) and a layout that works on phones
 
@@ -87,7 +88,8 @@ src/
 │   ├── BulkBar.tsx          # Change the category of, or delete, several transactions
 │   ├── UndoToast.tsx        # The "Deleted … Undo" bar
 │   ├── MonthComparison.tsx  # Spending per category vs last month
-│   ├── DataMenu.tsx         # Download / restore a backup, export CSV
+│   ├── DataMenu.tsx         # Download / restore a backup, export CSV, reset everything
+│   ├── ResetDialog.tsx      # The "Reset everything?" warning, unlocked by typing RESET
 │   └── SpendingCharts.tsx   # Daily and per-category bar charts
 ├── hooks/
 │   ├── useTransactions.ts   # State + automatic saving to localStorage

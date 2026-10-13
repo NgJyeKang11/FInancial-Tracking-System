@@ -1,4 +1,5 @@
 import type { AppData, Transaction } from '../types'
+import { todayISO } from './dates'
 import { parseAppData } from './sync'
 
 /** Marks a file as a Telemachus backup, and which shape it's in. */
@@ -52,6 +53,11 @@ export function toCsv(transactions: Transaction[]): string {
       ((t.type === 'income' ? 1 : -1) * t.amountCents / 100).toFixed(2),
     ])
   return [['Date', 'Description', 'Category', 'Type', 'Amount'], ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')
+}
+
+/** Saves a backup of everything as telemachus-backup-<date>.json. */
+export function downloadBackup(data: AppData): void {
+  downloadText(`telemachus-backup-${todayISO()}.json`, toBackupJson(data), 'application/json')
 }
 
 /** Starts a download of `text` as a file in the browser. */

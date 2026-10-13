@@ -122,6 +122,19 @@ describe('useCloudSync', () => {
     )
   })
 
+  it('empties the account too when everything is reset while signed in', async () => {
+    const { result } = setup({ ...EMPTY_DATA, transactions: [tx('a'), tx('b')], budgets: { Groceries: 100 } })
+    await signIn(result)
+    act(() => result.current.setData({ ...EMPTY_DATA, currency: result.current.data.currency }))
+    await waitFor(
+      () => {
+        expect(accountData()).toMatchObject({ transactions: [], budgets: {}, recurring: [] })
+        expect(result.current.sync.status).toBe('saved')
+      },
+      { timeout: 2000 },
+    )
+  })
+
   it('shows changes saved on another device', async () => {
     const { result } = setup(EMPTY_DATA)
     await signIn(result)
