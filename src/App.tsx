@@ -4,6 +4,7 @@ import { AdjustBalanceDialog } from './components/AdjustBalanceDialog'
 import { BudgetAlerts } from './components/BudgetAlerts'
 import { BudgetPanel } from './components/BudgetPanel'
 import { BulkBar } from './components/BulkBar'
+import { CurrencyDialog } from './components/CurrencyDialog'
 import { ImportDialog } from './components/ImportDialog'
 import { MonthComparison } from './components/MonthComparison'
 import { MonthPicker } from './components/MonthPicker'
@@ -19,12 +20,14 @@ import { UndoToast, type UndoAction } from './components/UndoToast'
 import { useBudgets } from './hooks/useBudgets'
 import { CustomCategoriesContext } from './hooks/useCategories'
 import { useCloudSync } from './hooks/useCloudSync'
+import { useRates } from './hooks/useRates'
 import { useRecurring } from './hooks/useRecurring'
 import { useStoredState } from './hooks/useStoredState'
 import { useTransactions } from './hooks/useTransactions'
 import { learnCategories } from './lib/categorize'
 import { EMPTY_DATA } from './lib/sync'
 import { addMonths, formatMonth, monthOf, todayISO } from './lib/dates'
+import { convertData } from './lib/rates'
 import { catchUp, dueTransactions } from './lib/recurring'
 import { balanceAsOf, balanceByDate, budgetStatuses, compareMonths, expensesOnly, inMonth } from './lib/stats'
 import {
@@ -87,6 +90,9 @@ function App() {
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null)
   const clearUndo = useCallback(() => setUndoAction(null), [])
   const [resetting, setResetting] = useState(false)
+  /** The currency picked in Settings, waiting for "convert or just relabel?". */
+  const [pendingCurrency, setPendingCurrency] = useState<string | null>(null)
+  const { rates, source: ratesSource } = useRates()
 
   const appData = useMemo<AppData>(
     () => ({ transactions, budgets, recurring, currency, customCategories, categoryRules }),
@@ -167,6 +173,31 @@ function App() {
   const changeCurrency = (value: string) => {
     setCurrency(value)
     saveCurrency(value)
+  }
+
+  /** With no amounts saved there's nothing to convert; otherwise ask whether to convert or relabel. */
+  const requestCurrency = (to: string) => {
+    if (to === currency) return
+    const hasAmounts = transactions.length > 0 || recurring.length > 0 || Object.keys(budgets).length > 0
+    if (hasAmounts) setPendingCurrency(to)
+    else changeCurrency(to)
+  }
+
+  const convertCurrency = (to: string) => {
+    const before = appData
+    const converted = convertData(appData, to, rates)
+    if (!converted) return
+    replaceAll(converted)
+    setUndoAction({
+      message: `Converted everything from ${before.currency} to ${to}.`,
+      undo: () => replaceAll(before),
+    })
+  }
+
+  const relabelCurrency = (to: string) => {
+    const from = currency
+    changeCurrency(to)
+    setUndoAction({ message: `Now shown as ${to}. Nothing was converted.`, undo: () => changeCurrency(from) })
   }
 
   /** Removes transactions now; Undo puts them back where they were. */
@@ -456,7 +487,7 @@ function App() {
             <SettingsPage
               data={appData}
               cloud={cloud}
-              onCurrencyChange={changeCurrency}
+              onCurrencyChange={requestCurrency}
               usage={(name) => transactions.filter((t) => t.category === name).length}
               onAddCategory={(c) => setCustomCategories((prev) => [...prev, c])}
               onRemoveCategory={handleRemoveCategory}
@@ -496,6 +527,19 @@ function App() {
               add(input)
               setMonth(monthOf(input.date))
             }}
+          />
+        )}
+
+        {pendingCurrency !== null && (
+          <CurrencyDialog
+            from={currency}
+            to={pendingCurrency}
+            balanceCents={balanceAsOf(transactions, todayISO())}
+            rates={rates}
+            ratesSource={ratesSource}
+            onConvert={() => convertCurrency(pendingCurrency)}
+            onRelabel={() => relabelCurrency(pendingCurrency)}
+            onClose={() => setPendingCurrency(null)}
           />
         )}
 
