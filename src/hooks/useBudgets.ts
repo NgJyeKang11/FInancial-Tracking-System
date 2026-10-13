@@ -17,5 +17,5 @@ export function useBudgets() {
       return cents === null ? rest : { ...rest, [category]: cents }
     })
 
-  return { budgets, setBudget }
+  return { budgets, setBudget, replace: setBudgets }
 }

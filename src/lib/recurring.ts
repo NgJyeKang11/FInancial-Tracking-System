@@ -1,4 +1,4 @@
-import type { Recurring, TransactionInput } from '../types'
+import type { Recurring, Transaction } from '../types'
 import { addMonths, daysInMonth, monthOf } from './dates'
 import { loadRecurring, loadTransactions, saveRecurring, saveTransactions } from './storage'
 
@@ -10,23 +10,42 @@ export function occurrenceDate(day: number, month: string): string {
 /**
  * The transactions a recurring item still owes, from the month after its `lastMonth` up to
  * `today` (a month whose day hasn't come yet waits), and the item with `lastMonth` moved on.
+ * Each one's id is made from the item and the month, so two devices adding the same month
+ * produce the same transaction rather than a duplicate.
  */
-export function dueTransactions(item: Recurring, today: string): { inputs: TransactionInput[]; item: Recurring } {
-  const inputs: TransactionInput[] = []
+export function dueTransactions(item: Recurring, today: string): { transactions: Transaction[]; item: Recurring } {
+  const transactions: Transaction[] = []
   let lastMonth = item.lastMonth
   for (let month = addMonths(lastMonth, 1); month <= monthOf(today); month = addMonths(month, 1)) {
     const date = occurrenceDate(item.day, month)
     if (date > today) break
-    inputs.push({ type: item.type, amountCents: item.amountCents, category: item.category, date, note: item.note })
+    transactions.push({
+      id: `${item.id}:${month}`,
+      type: item.type,
+      amountCents: item.amountCents,
+      category: item.category,
+      date,
+      note: item.note,
+    })
     lastMonth = month
   }
-  return { inputs, item: { ...item, lastMonth } }
+  return { transactions, item: { ...item, lastMonth } }
 }
 
-/** Runs `dueTransactions` for every item. */
-export function catchUp(items: Recurring[], today: string): { inputs: TransactionInput[]; items: Recurring[] } {
-  const results = items.map((item) => dueTransactions(item, today))
-  return { inputs: results.flatMap((r) => r.inputs), items: results.map((r) => r.item) }
+/**
+ * Adds every recurring item's due transactions to `transactions` (skipping any already there)
+ * and moves each item's `lastMonth` on. `changed` is false when nothing was due.
+ */
+export function catchUp(
+  transactions: Transaction[],
+  recurring: Recurring[],
+  today: string,
+): { transactions: Transaction[]; recurring: Recurring[]; changed: boolean } {
+  const results = recurring.map((item) => dueTransactions(item, today))
+  const ids = new Set(transactions.map((t) => t.id))
+  const due = results.flatMap((r) => r.transactions).filter((t) => !ids.has(t.id))
+  const changed = results.some((r, i) => r.item.lastMonth !== recurring[i].lastMonth)
+  return { transactions: [...transactions, ...due], recurring: results.map((r) => r.item), changed }
 }
 
 /**
@@ -34,11 +53,8 @@ export function catchUp(items: Recurring[], today: string): { inputs: Transactio
  * app starts, before anything is shown, so each month is added exactly once.
  */
 export function applyDueRecurring(today: string, storage: Storage = localStorage): void {
-  const { inputs, items } = catchUp(loadRecurring(storage), today)
-  if (inputs.length === 0) return
-  saveTransactions(
-    [...loadTransactions(storage), ...inputs.map((input) => ({ ...input, id: crypto.randomUUID() }))],
-    storage,
-  )
-  saveRecurring(items, storage)
+  const result = catchUp(loadTransactions(storage), loadRecurring(storage), today)
+  if (!result.changed) return
+  saveTransactions(result.transactions, storage)
+  saveRecurring(result.recurring, storage)
 }

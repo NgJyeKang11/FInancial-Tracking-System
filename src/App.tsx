@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AccountMenu } from './components/AccountMenu'
 import { AdjustBalanceDialog } from './components/AdjustBalanceDialog'
 import { BudgetAlerts } from './components/BudgetAlerts'
 import { BudgetPanel } from './components/BudgetPanel'
@@ -11,13 +12,22 @@ import { SummaryCards } from './components/SummaryCards'
 import { TransactionDialog } from './components/TransactionDialog'
 import { TransactionList } from './components/TransactionList'
 import { useBudgets } from './hooks/useBudgets'
+import { useCloudSync } from './hooks/useCloudSync'
 import { useRecurring } from './hooks/useRecurring'
 import { useTransactions } from './hooks/useTransactions'
 import { addMonths, formatMonth, monthOf, todayISO } from './lib/dates'
 import { dueTransactions } from './lib/recurring'
 import { balanceAsOf, balanceByDate, budgetStatuses, expensesOnly, inMonth } from './lib/stats'
 import { loadCurrency, saveCurrency } from './lib/storage'
-import { ADJUSTMENT, CATEGORIES, INCOME_CATEGORIES, type Category, type Recurring, type Transaction } from './types'
+import {
+  ADJUSTMENT,
+  CATEGORIES,
+  INCOME_CATEGORIES,
+  type AppData,
+  type Category,
+  type Recurring,
+  type Transaction,
+} from './types'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'MYR', 'SGD', 'AUD', 'CAD', 'JPY', 'INR', 'CNY']
 
@@ -34,9 +44,9 @@ type Tab = (typeof TABS)[number]['id']
 const tabFromHash = (): Tab => TABS.find((t) => `#${t.id}` === window.location.hash)?.id ?? 'overview'
 
 function App() {
-  const { transactions, add, addMany, update, remove } = useTransactions()
-  const { budgets, setBudget } = useBudgets()
-  const { recurring, add: addRecurring, remove: removeRecurring } = useRecurring()
+  const { transactions, add, addMany, addExisting, update, remove, replace: replaceTransactions } = useTransactions()
+  const { budgets, setBudget, replace: replaceBudgets } = useBudgets()
+  const { recurring, add: addRecurring, remove: removeRecurring, replace: replaceRecurring } = useRecurring()
   const [tab, setTab] = useState<Tab>(tabFromHash)
   const [importing, setImporting] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
@@ -48,6 +58,18 @@ function App() {
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All')
   const [search, setSearch] = useState('')
   const [currency, setCurrency] = useState(() => loadCurrency() ?? 'USD')
+
+  const appData = useMemo<AppData>(
+    () => ({ transactions, budgets, recurring, currency }),
+    [transactions, budgets, recurring, currency],
+  )
+  const cloud = useCloudSync(appData, (data) => {
+    replaceTransactions(data.transactions)
+    replaceBudgets(data.budgets)
+    replaceRecurring(data.recurring)
+    setCurrency(data.currency)
+    saveCurrency(data.currency)
+  })
 
   useEffect(() => {
     const onHashChange = () => setTab(tabFromHash())
@@ -99,9 +121,9 @@ function App() {
       id: crypto.randomUUID(),
       lastMonth: startThisMonth ? addMonths(thisMonth, -1) : thisMonth,
     }
-    const { inputs, item: updated } = dueTransactions(item, todayISO())
+    const { transactions: due, item: updated } = dueTransactions(item, todayISO())
     addRecurring(updated)
-    if (inputs.length > 0) addMany(inputs)
+    if (due.length > 0) addExisting(due)
   }
 
   const handleRemoveRecurring = (r: Recurring) => {
@@ -124,6 +146,9 @@ function App() {
           <button type="button" className="primary" onClick={() => setForm('new')}>
             + Add
           </button>
+          {cloud.enabled && (
+            <AccountMenu user={cloud.user} status={cloud.status} onSignIn={cloud.signIn} onSignOut={cloud.signOut} />
+          )}
         </div>
       </header>
 
@@ -150,6 +175,9 @@ function App() {
             <div className="card empty welcome">
               <h2>Welcome to Telemachus</h2>
               <p className="muted">Add your first transaction, or import a bank statement to fill things in quickly.</p>
+              {cloud.enabled && !cloud.user && (
+                <p className="muted">Used Telemachus on another device? Sign in with Google to bring your data here.</p>
+              )}
               <div className="welcome-actions">
                 <button type="button" onClick={() => setImporting(true)}>
                   Import a statement

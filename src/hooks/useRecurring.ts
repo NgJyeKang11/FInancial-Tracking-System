@@ -14,5 +14,5 @@ export function useRecurring() {
 
   const remove = (id: string) => setRecurring((prev) => prev.filter((r) => r.id !== id))
 
-  return { recurring, add, remove }
+  return { recurring, add, remove, replace: setRecurring }
 }

@@ -21,5 +21,12 @@ export function useTransactions() {
 
   const remove = (id: string) => setTransactions((prev) => prev.filter((t) => t.id !== id))
 
-  return { transactions, add, addMany, update, remove }
+  /** Adds transactions that already have ids, skipping any that are already here. */
+  const addExisting = (items: Transaction[]) =>
+    setTransactions((prev) => {
+      const ids = new Set(prev.map((t) => t.id))
+      return [...prev, ...items.filter((t) => !ids.has(t.id))]
+    })
+
+  return { transactions, add, addMany, addExisting, update, remove, replace: setTransactions }
 }
