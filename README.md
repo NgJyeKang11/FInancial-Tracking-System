@@ -150,6 +150,10 @@ Sign-in is optional and stays hidden until a Firebase project is connected. The 
 
 The config values aren't secrets: each person's data is protected by Google sign-in and the Firestore rules, which only let a signed-in person read and write their own document.
 
+## Versions
+
+The version (in `package.json`) shows next to the name and at the bottom of Settings. The middle number goes up for a big new feature and the last one for fixes and small additions. Each version's changes are listed under [Releases](https://github.com/NgJyeKang11/Telemachus/releases).
+
 ## Roadmap
 
 - [x] Income tracking and a running balance

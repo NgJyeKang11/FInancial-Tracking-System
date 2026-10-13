@@ -2,6 +2,7 @@ import { SYNC_STATUS_TEXT, useAccountActions } from '../hooks/useAccountActions'
 import type { SyncStatus } from '../hooks/useCloudSync'
 import { initialOf, type CloudUser } from '../lib/cloud'
 import { CURRENCIES } from '../lib/money'
+import { APP_VERSION } from '../version'
 import type { AppData, CustomCategory } from '../types'
 import { CategoriesPanel } from './CategoriesPanel'
 import { DataMenu } from './DataMenu'
@@ -118,6 +119,13 @@ export function SettingsPage({
           </button>
         </div>
       </section>
+
+      <p className="app-version muted">
+        Telemachus v{APP_VERSION} ·{' '}
+        <a href="https://github.com/NgJyeKang11/Telemachus/releases" target="_blank" rel="noreferrer">
+          What's new
+        </a>
+      </p>
     </>
   )
 }

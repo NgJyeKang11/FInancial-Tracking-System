@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { APP_VERSION } from './version'
 import { AccountMenu } from './components/AccountMenu'
 import { AdjustBalanceDialog } from './components/AdjustBalanceDialog'
 import { BudgetAlerts } from './components/BudgetAlerts'
@@ -307,7 +308,7 @@ function App() {
       <div className="app">
         <header className="app-header">
           <h1>
-            Telemachus <span className="byline">by JK</span>
+            Telemachus <span className="byline">by JK</span> <span className="version">v{APP_VERSION}</span>
           </h1>
           <div className="header-actions">
             <button type="button" onClick={() => setImporting(true)}>
